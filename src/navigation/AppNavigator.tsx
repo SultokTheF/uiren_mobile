@@ -1,17 +1,18 @@
 import React, { useContext } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import QRScannerScreen from '../screens/QRScannerScreen'; // QR Scanner screen
+import MapScreen from '../screens/MapScreen'; // Map screen
 import CentersSectionsScreen from '../screens/CentersSections/CentersSectionsScreen';
 import SectionDetailScreen from '../screens/CentersSections/SectionDetailScreen';
 import CenterDetailScreen from '../screens/CentersSections/CenterDetailScreen';
-import LoginScreen from '../screens/Auth/LoginScreen'; 
-import RegisterScreen from '../screens/Auth/RegisterScreen';
-import { AuthContext } from '../contexts/AuthContext'; 
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import LoginScreen from '../screens/Auth/LoginScreen';
+import { AuthContext } from '../contexts/AuthContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -22,9 +23,6 @@ const HomeStack = () => (
     <Stack.Screen name="Занятия и Центры" component={CentersSectionsScreen} />
     <Stack.Screen name="Центр" component={CenterDetailScreen} />
     <Stack.Screen name="Занятие" component={SectionDetailScreen} />
-    {/* <Stack.Screen name="Профиль" component={SectionDetailScreen} /> */}
-    <Stack.Screen name="Регистрация" component={RegisterScreen} />
-    {/* <Stack.Screen name="Вход" component={RegisterScreen} /> */}
   </Stack.Navigator>
 );
 
@@ -37,9 +35,11 @@ const AppNavigator = () => {
         tabBarIcon: ({ color, size }) => {
           let iconName;
           if (route.name === 'Главная') iconName = 'home';
-          if (route.name === 'Поиск') iconName = 'search';
-          if (route.name === 'Расписание') iconName = 'calendar-today';
+          // if (route.name === 'Поиск') iconName = 'search';
+          // if (route.name === 'Расписание') iconName = 'calendar-today';
           if (route.name === 'Профиль') iconName = 'person';
+          if (route.name === 'Карта') iconName = 'map';  // Map tab icon
+          if (route.name === 'QR') iconName = 'qr-code-scanner'; // QR tab icon
           return <Icon name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#007aff',
@@ -56,11 +56,13 @@ const AppNavigator = () => {
       })}
     >
       <Tab.Screen name="Главная" component={HomeStack} />
-      <Tab.Screen name="Поиск" component={CentersSectionsScreen} />
-      <Tab.Screen name="Расписание" component={ScheduleScreen} />
+      {/* <Tab.Screen name="Поиск" component={CentersSectionsScreen} /> */}
+      {/* <Tab.Screen name="Расписание" component={ScheduleScreen} /> */}
+      <Tab.Screen name="Карта" component={MapScreen} />
+      <Tab.Screen name="QR" component={QRScannerScreen} />
       <Tab.Screen
         name="Профиль"
-        component={authContext?.user ? ProfileScreen : LoginScreen} 
+        component={authContext?.user ? ProfileScreen : LoginScreen}
       />
     </Tab.Navigator>
   );
