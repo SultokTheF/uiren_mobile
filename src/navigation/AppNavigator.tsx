@@ -11,6 +11,7 @@ import MapScreen from '../screens/MapScreen'; // Map screen
 import CentersSectionsScreen from '../screens/CentersSections/CentersSectionsScreen';
 import SectionDetailScreen from '../screens/CentersSections/SectionDetailScreen';
 import CenterDetailScreen from '../screens/CentersSections/CenterDetailScreen';
+import RegisterScreen from '../screens/Auth/RegisterScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import { AuthContext } from '../contexts/AuthContext';
 
@@ -23,6 +24,8 @@ const HomeStack = () => (
     <Stack.Screen name="Занятия и Центры" component={CentersSectionsScreen} />
     <Stack.Screen name="Центр" component={CenterDetailScreen} />
     <Stack.Screen name="Занятие" component={SectionDetailScreen} />
+    <Stack.Screen name="Регистрация" component={RegisterScreen} />
+    <Stack.Screen name="Вход" component={LoginScreen} />
   </Stack.Navigator>
 );
 
