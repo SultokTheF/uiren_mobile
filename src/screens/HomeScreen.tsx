@@ -79,7 +79,7 @@ const HomeScreen: React.FC = () => {
       {/* Top Banner Section */}
       <View style={styles.topSection}>
         <Image
-          source={{ uri: "https://optim.tildacdn.pro/tild3466-6634-4261-a165-366230663830/-/resize/560x/-/format/webp/kjhygtf.png" }}
+          source={{ uri: "https://t4.ftcdn.net/jpg/04/30/13/89/360_F_430138951_otmGEbVlWbrpfbRBJaNMvkqVXTkCRx76.jpg" }}
           style={styles.bannerImage}
         />
       </View>
@@ -105,7 +105,7 @@ const HomeScreen: React.FC = () => {
               <CategoryCard
                 key={category.id}
                 title={category.name}
-                imageUrl={category.image}
+                imageUrl={category.image || ""}
               />
             ))}
           </View>
@@ -133,7 +133,7 @@ const HomeScreen: React.FC = () => {
                 onPress={() => navigation.navigate('Центр', { centerId: center.id })}
               >
                 <View style={styles.centerCard}>
-                  <Image source={{ uri: center.image }} style={styles.centerImage} />
+                  <Image source={{ uri: center.image || "" }} style={styles.centerImage} />
                   <View style={styles.centerInfo}>
                     <Icon name="business" size={20} color="#007aff" style={styles.centerIcon} />
                     <Text style={styles.centerTitle}>{center.name}</Text>

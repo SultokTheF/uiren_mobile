@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
+import MySubscriptionsScreen from '../screens/Subscriptions/MySubscriptionsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import QRScannerScreen from '../screens/QRScannerScreen'; // QR Scanner screen
 import MapScreen from '../screens/MapScreen'; // Map screen
@@ -26,6 +27,7 @@ const HomeStack = () => (
     <Stack.Screen name="Занятие" component={SectionDetailScreen} />
     <Stack.Screen name="Регистрация" component={RegisterScreen} />
     <Stack.Screen name="Вход" component={LoginScreen} />
+    <Stack.Screen name="Мои абонименты" component={MySubscriptionsScreen} />
   </Stack.Navigator>
 );
 

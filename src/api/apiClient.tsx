@@ -1,8 +1,7 @@
-// src/api/apiClient.ts
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://192.168.0.11:8000/';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://10.73.62.114:8000/';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -18,8 +17,12 @@ const endpoints = {
   USERS: 'user/users/',
   CENTERS: 'api/centers/',
   SECTIONS: 'api/sections/',
-  CATEGORIES: 'api/section-categories/',
-  SUBSCRIPTIONS: 'api/subscriptions/'
+  CATEGORIES: 'api/categories/',
+  SUBSCRIPTIONS: 'api/subscriptions/',
+  SCHEDULES: 'api/schedules/',
+  RECORDS: 'api/records/',
+  FEEDBACKS: 'api/feedbacks/',
+  CONFIRM_ATTENDANCE: 'api/attendance/',
 };
 
 const getAccessToken = async () => {

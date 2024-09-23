@@ -1,12 +1,15 @@
 import React, { useContext } from 'react';
-import { View, Text, Button, StyleSheet, Image } from 'react-native';
+import { View, Text, Button, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { MySubscriptionsScreenNavigationProp } from '../types/types';
 import { AuthContext } from '../contexts/AuthContext';
-import Alert from '../components/Alert'; // Import the custom Alert component
+import Alert from '../components/Alert'; // Custom alert component
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const ProfileScreen: React.FC = () => {
   const authContext = useContext(AuthContext);
+  const navigation = useNavigation<MySubscriptionsScreenNavigationProp>();
 
   if (!authContext?.user) {
     return (
@@ -57,6 +60,13 @@ const ProfileScreen: React.FC = () => {
         <Text style={styles.value}>{user.phone_number}</Text>
       </View>
 
+      {/* Мои абонименты Button */}
+      <TouchableOpacity style={styles.subscriptionButton} onPress={() => navigation.navigate('Мои абонименты')}>
+        <Icon name="subscriptions" size={24} color="#fff" />
+        <Text style={styles.subscriptionText}>Мои абонименты</Text>
+      </TouchableOpacity>
+
+      {/* Logout Button with original logic */}
       <Button title="Выйти" onPress={logout} color="#FF6347" />
     </Animatable.View>
   );
@@ -82,7 +92,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   username: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
   },
@@ -110,9 +120,22 @@ const styles = StyleSheet.create({
     color: '#555',
     marginTop: 5,
   },
-  button: {
+  subscriptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007aff',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
     marginTop: 20,
-    backgroundColor: '#FF6347',
+    width: '100%',
+    justifyContent: 'center',
+  },
+  subscriptionText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
 });
 

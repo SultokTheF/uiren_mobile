@@ -18,7 +18,9 @@ const CentersSectionsScreen: React.FC = () => {
 
   const fetchCentersAndSections = async () => {
     try {
-      const params: any = {};
+      const params: any = {
+        page: 'all',
+      };
 
       if (searchQuery) {
         params.search = searchQuery;
@@ -27,8 +29,8 @@ const CentersSectionsScreen: React.FC = () => {
       const centersResponse = await axiosInstance.get(endpoints.CENTERS, { params });
       const sectionsResponse = await axiosInstance.get(endpoints.SECTIONS, { params });
 
-      setCenters(centersResponse.data.results);
-      setSections(sectionsResponse.data.results);
+      setCenters(centersResponse.data);
+      setSections(sectionsResponse.data);
       setLoading(false);
     } catch (error) {
       setError('Не удалось загрузить данные');
