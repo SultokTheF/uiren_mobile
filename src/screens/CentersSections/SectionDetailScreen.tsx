@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Modal, Pressable, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Image } from 'react-native';
 import { axiosInstance, endpoints } from '../../api/apiClient';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SectionDetailScreenNavigationProp } from '@/src/types/types';
-import { Section, Category } from '../../types/types';
+import { Section, Category, Schedule, Center, Subscription } from '../../types/types';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const SectionDetailScreen: React.FC = () => {
@@ -14,36 +14,119 @@ const SectionDetailScreen: React.FC = () => {
   const [category, setCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [centers, setCenters] = useState<Center[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [selectedCenter, setSelectedCenter] = useState<number | null>(null);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReserveButtonVisible, setIsReserveButtonVisible] = useState(false); // For showing reserve button
+  const [noSubscriptionMessage, setNoSubscriptionMessage] = useState<string | null>(null); // No subscription message
 
+  // Fetch section details
   const fetchSectionDetails = async () => {
     try {
       const response = await axiosInstance.get(`${endpoints.SECTIONS}${sectionId}/`);
       setSection(response.data);
-      setLoading(false);
     } catch (error) {
       setError('Не удалось загрузить информацию о занятии');
+    } finally {
       setLoading(false);
     }
   };
 
-  const fetchCategory = async () => {
+  // Fetch centers with params
+  const fetchCenters = async () => {
+    if (!sectionId) return;
     try {
-      if(section) {
-        const response = await axiosInstance.get(`${endpoints.CATEGORIES}${section?.category}/`);
-        setCategory(response.data);
+      const response = await axiosInstance.get(`${endpoints.CENTERS}`, {
+        params: { page: 'all', sections__id: sectionId }
+      });
+      setCenters(response.data);
+    } catch (error) {
+      console.error('Ошибка при загрузке центров:', error);
+    }
+  };
+
+  // Fetch schedules based on selected center
+  const fetchSchedules = async (centerId: number) => {
+    if (!sectionId) return;
+    try {
+      const response = await axiosInstance.get(`${endpoints.SCHEDULES}`, {
+        params: { page: 'all', section: sectionId, center: centerId }
+      });
+      setSchedules(response.data);
+    } catch (error) {
+      console.error('Ошибка при загрузке расписания:', error);
+    }
+  };
+
+  // Fetch subscriptions and check if available
+  const fetchSubscriptions = async () => {
+    try {
+      const response = await axiosInstance.get(`${endpoints.SUBSCRIPTIONS}`, {
+        params: { page: 'all', section: sectionId }
+      });
+      setSubscriptions(response.data);
+      // Check if there's a suitable subscription
+      if (response.data.length > 0) {
+        setIsReserveButtonVisible(true); // Show "Забронировать" button if subscription exists
+        setNoSubscriptionMessage(null);
+      } else {
+        setIsReserveButtonVisible(false);
+        setNoSubscriptionMessage('У вас нет подходящего абонимента');
       }
     } catch (error) {
-      setError('Не удалось загрузить информацию о категории');
+      console.error('Ошибка при загрузке подписок:', error);
     }
-  }
+  };
+
+  // Handle selecting a schedule
+  const handleScheduleSelect = async (scheduleId: number) => {
+    setSelectedSchedule(scheduleId);
+    await fetchSubscriptions(); // Check subscriptions after schedule selection
+  };
+
+  // Handle reservation
+  const handleReserve = async () => {
+    if (!selectedSchedule) {
+      Alert.alert('Ошибка', 'Выберите расписание.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await axiosInstance.post(endpoints.RECORDS, {
+        schedule: selectedSchedule,
+        section: sectionId,
+      });
+      Alert.alert('Успех', 'Запись успешно забронирована!');
+      setIsModalVisible(false);
+    } catch (error) {
+      Alert.alert('Ошибка', 'Не удалось забронировать запись.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     fetchSectionDetails();
   }, [sectionId]);
 
   useEffect(() => {
-    fetchCategory();
+    if (selectedCenter) fetchSchedules(selectedCenter);
+  }, [selectedCenter]);
+
+  useEffect(() => {
+    fetchCenters();
   }, [section]);
+
+  const openModal = () => setIsModalVisible(true);
+  const closeModal = () => {
+    setIsModalVisible(false);
+    setIsReserveButtonVisible(false); // Reset reserve button visibility when modal is closed
+  };
 
   if (loading) {
     return <ActivityIndicator size="large" color="#007aff" />;
@@ -71,9 +154,67 @@ const SectionDetailScreen: React.FC = () => {
         <Text style={styles.detailText}>Количество центров: {section?.centers.length}</Text>
       </View>
 
-      <Pressable style={styles.button} onPress={() => alert('Записаться')}>
+      <Pressable style={styles.button} onPress={openModal}>
         <Text style={styles.buttonText}>Записаться</Text>
       </Pressable>
+
+      {/* Modal for selecting center and schedule */}
+      <Modal visible={isModalVisible} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Выберите Центр и Расписание</Text>
+
+            {/* Center Selection */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.centerList}>
+              {centers.map((center) => (
+                <Pressable
+                  key={center.id}
+                  style={[styles.centerOption, selectedCenter === center.id && styles.centerOptionSelected]}
+                  onPress={() => setSelectedCenter(center.id)}
+                >
+                  <Text style={styles.centerText}>{center.name}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            {/* Schedule Selection */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scheduleList}>
+              {schedules.map((schedule) => (
+                <Pressable
+                  key={schedule.id}
+                  style={[
+                    styles.scheduleOption,
+                    selectedSchedule === schedule.id && styles.scheduleOptionSelected,
+                    !schedule.status && styles.scheduleOptionDisabled,
+                  ]}
+                  onPress={() => handleScheduleSelect(schedule.id)}
+                  disabled={!schedule.status}
+                >
+                  <Text style={styles.scheduleText}>
+                    {schedule.start_time} - {schedule.end_time}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            {/* Reserve Button */}
+            {isReserveButtonVisible && (
+              <TouchableOpacity style={styles.reserveButton} onPress={handleReserve}>
+                <Text style={styles.reserveButtonText}>Забронировать</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* No Subscription Message */}
+            {noSubscriptionMessage && (
+              <Text style={styles.noSubscriptionText}>{noSubscriptionMessage}</Text>
+            )}
+
+            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+              <Text style={styles.closeButtonText}>Отмена</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -137,10 +278,96 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 12,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  centerList: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  centerOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    marginHorizontal: 10,
+  },
+  centerOptionSelected: {
+    backgroundColor: '#007aff',
+  },
+  centerText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  scheduleList: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  scheduleOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    marginHorizontal: 10,
+  },
+  scheduleOptionSelected: {
+    backgroundColor: '#007aff',
+  },
+  scheduleOptionDisabled: {
+    backgroundColor: '#d3d3d3',
+  },
+  scheduleText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  reserveButton: {
+    backgroundColor: '#28a745',
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  reserveButtonText: {
+    color: '#fff',
+    fontSize: 18,
+  },
+  noSubscriptionText: {
+    color: 'red',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  closeButton: {
+    marginTop: 15,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: '#FF6347',
+    borderRadius: 8,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
   errorText: {
     color: 'red',
     fontSize: 16,
     textAlign: 'center',
+    marginTop: 20,
   },
 });
 

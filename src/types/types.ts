@@ -97,7 +97,7 @@ export interface Subscription {
 
 export interface Schedule {
   id: number;
-  section: Section;
+  section: Section | number;
   center: Center;
   date: string;
   start_time: string;
@@ -110,7 +110,7 @@ export interface Schedule {
 export interface Record {
   id: number;
   user: User;
-  schedule: Schedule;
+  schedule: Schedule | number;
   attended: boolean;
   section: Section;
 }
