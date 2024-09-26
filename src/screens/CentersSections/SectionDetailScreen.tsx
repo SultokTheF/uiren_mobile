@@ -3,7 +3,7 @@ import { View, Text, Modal, Pressable, ScrollView, TouchableOpacity, StyleSheet,
 import { axiosInstance, endpoints } from '../../api/apiClient';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SectionDetailScreenNavigationProp } from '@/src/types/types';
-import { Section, Category, Schedule, Center, Subscription } from '../../types/types';
+import { Section, Category, Schedule, Subscription } from '../../types/types';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const SectionDetailScreen: React.FC = () => {
@@ -14,11 +14,9 @@ const SectionDetailScreen: React.FC = () => {
   const [category, setCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [centers, setCenters] = useState<Center[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [selectedCenter, setSelectedCenter] = useState<number | null>(null);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isReserveButtonVisible, setIsReserveButtonVisible] = useState(false); // For showing reserve button
@@ -36,25 +34,11 @@ const SectionDetailScreen: React.FC = () => {
     }
   };
 
-  // Fetch centers with params
-  const fetchCenters = async () => {
-    if (!sectionId) return;
-    try {
-      const response = await axiosInstance.get(`${endpoints.CENTERS}`, {
-        params: { page: 'all', sections__id: sectionId }
-      });
-      setCenters(response.data);
-    } catch (error) {
-      console.error('Ошибка при загрузке центров:', error);
-    }
-  };
-
-  // Fetch schedules based on selected center
-  const fetchSchedules = async (centerId: number) => {
-    if (!sectionId) return;
+  // Fetch schedules based on section
+  const fetchSchedules = async () => {
     try {
       const response = await axiosInstance.get(`${endpoints.SCHEDULES}`, {
-        params: { page: 'all', section: sectionId, center: centerId }
+        params: { page: 'all', section: sectionId }
       });
       setSchedules(response.data);
     } catch (error) {
@@ -81,6 +65,20 @@ const SectionDetailScreen: React.FC = () => {
       console.error('Ошибка при загрузке подписок:', error);
     }
   };
+
+  const fetchCategories = async () => {
+    try {
+      if (!section) return;
+      const response = await axiosInstance.get(`${endpoints.CATEGORIES}${section?.category}/`);
+      setCategory(response.data);
+    } catch (error) {
+      console.error('Ошибка при загрузке категорий:', error);
+    }
+  }
+
+  useEffect(() => {
+    fetchCategories();
+  }, [section]);
 
   // Handle selecting a schedule
   const handleScheduleSelect = async (scheduleId: number) => {
@@ -112,15 +110,8 @@ const SectionDetailScreen: React.FC = () => {
 
   useEffect(() => {
     fetchSectionDetails();
+    fetchSchedules(); // Fetch schedules based on section
   }, [sectionId]);
-
-  useEffect(() => {
-    if (selectedCenter) fetchSchedules(selectedCenter);
-  }, [selectedCenter]);
-
-  useEffect(() => {
-    fetchCenters();
-  }, [section]);
 
   const openModal = () => setIsModalVisible(true);
   const closeModal = () => {
@@ -151,31 +142,17 @@ const SectionDetailScreen: React.FC = () => {
 
       <View style={styles.details}>
         <Text style={styles.detailText}>Категория: {category?.name}</Text>
-        <Text style={styles.detailText}>Количество центров: {section?.centers.length}</Text>
       </View>
 
       <Pressable style={styles.button} onPress={openModal}>
         <Text style={styles.buttonText}>Записаться</Text>
       </Pressable>
 
-      {/* Modal for selecting center and schedule */}
+      {/* Modal for selecting schedule */}
       <Modal visible={isModalVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Выберите Центр и Расписание</Text>
-
-            {/* Center Selection */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.centerList}>
-              {centers.map((center) => (
-                <Pressable
-                  key={center.id}
-                  style={[styles.centerOption, selectedCenter === center.id && styles.centerOptionSelected]}
-                  onPress={() => setSelectedCenter(center.id)}
-                >
-                  <Text style={styles.centerText}>{center.name}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            <Text style={styles.modalTitle}>Выберите Расписание</Text>
 
             {/* Schedule Selection */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scheduleList}>
@@ -295,24 +272,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
-  },
-  centerList: {
-    flexDirection: 'row',
-    marginBottom: 15,
-  },
-  centerOption: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    marginHorizontal: 10,
-  },
-  centerOptionSelected: {
-    backgroundColor: '#007aff',
-  },
-  centerText: {
-    fontSize: 16,
-    color: '#333',
   },
   scheduleList: {
     flexDirection: 'row',

@@ -14,6 +14,7 @@ import SectionDetailScreen from '../screens/CentersSections/SectionDetailScreen'
 import CenterDetailScreen from '../screens/CentersSections/CenterDetailScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
+import ManageSubscriptionScreen from '../screens/Subscriptions/ManageSubscriptionScreen';
 import { AuthContext } from '../contexts/AuthContext';
 
 const Tab = createBottomTabNavigator();
@@ -28,6 +29,7 @@ const HomeStack = () => (
     <Stack.Screen name="Регистрация" component={RegisterScreen} />
     <Stack.Screen name="Вход" component={LoginScreen} />
     <Stack.Screen name="Мои абонименты" component={MySubscriptionsScreen} />
+    {/* <Stack.Screen name="Управление абонементом" component={ManageSubscriptionScreen} /> */}
   </Stack.Navigator>
 );
 

@@ -26,7 +26,7 @@ const CenterDetailScreen: React.FC = () => {
         const response = await axiosInstance.get(`${endpoints.CENTERS}${centerId}/`);
         setCenter(response.data);
 
-        const sectionsResponse = await axiosInstance.get(`${endpoints.SECTIONS}?page=all&centers=${centerId}`);
+        const sectionsResponse = await axiosInstance.get(`${endpoints.SECTIONS}?page=all&center=${centerId}`);
         setSections(sectionsResponse.data);
 
         const categoriesResponse = await axiosInstance.get(endpoints.CATEGORIES);

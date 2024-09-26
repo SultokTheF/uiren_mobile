@@ -13,12 +13,13 @@ export type RootStackParamList = {
   Расписание: undefined;
   Поиск: undefined;
   Карта: undefined;
-  "Занятия и Центры": undefined;
+  "Занятия и Центры": { category: number } | undefined;
   "Центр": { centerId: number };
   "Занятие": { sectionId: number };
   "Регистрация": undefined;
   "Вход": undefined;
-  "Мои абонименты": undefined;  // Add this new route
+  "Мои абонементы": undefined;  // Add this new route
+  "Управление абонементом": { subscriptionId: number };
 };
 
 // Universal navigation prop for all screens
@@ -39,8 +40,8 @@ export type RegisterScreenRouteProp = RouteProp<RootStackParamList, 'Регис�
 export type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Вход'>;
 export type LoginScreenRouteProp = RouteProp<RootStackParamList, 'Вход'>;
 
-export type MySubscriptionsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Мои абонименты'>;
-export type MySubscriptionsScreenRouteProp = RouteProp<RootStackParamList, 'Мои абонименты'>;
+export type MySubscriptionsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Мои абонементы'>;
+export type MySubscriptionsScreenRouteProp = RouteProp<RootStackParamList, 'Мои абонементы'>;
 
 // Interfaces for Center, Section, Category, User based on Django models
 
@@ -77,7 +78,7 @@ export interface User {
   last_name: string;
   phone_number: string;
   iin?: string;
-  role: 'USER' | 'ADMIN' | 'CHILD' | 'PARENT';
+  role: 'USER' | 'ADMIN' | 'CHILD' | 'PARENT' | 'STAFF';
   is_active: boolean;
   is_staff: boolean;
   is_verified: boolean;
@@ -87,6 +88,7 @@ export interface User {
 
 export interface Subscription {
   id: number;
+  name: string;
   user: User;
   section: Section;
   type: 'MONTH' | '6_MONTHS' | 'YEAR';
