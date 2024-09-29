@@ -61,7 +61,7 @@ const ProfileScreen: React.FC = () => {
       </View>
 
       {/* Мои абонименты Button */}
-      <TouchableOpacity style={styles.subscriptionButton} onPress={() => navigation.navigate('Мои абонименты')}>
+      <TouchableOpacity style={styles.subscriptionButton} onPress={() => navigation.navigate('Мои абонементы')}>
         <Icon name="subscriptions" size={24} color="#fff" />
         <Text style={styles.subscriptionText}>Мои абонименты</Text>
       </TouchableOpacity>

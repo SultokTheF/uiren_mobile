@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://10.73.62.139:8000/';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://10.73.62.177:8000/';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -22,7 +22,7 @@ const endpoints = {
   SCHEDULES: 'api/schedules/',
   RECORDS: 'api/records/',
   FEEDBACKS: 'api/feedbacks/',
-  CONFIRM_ATTENDANCE: 'api/attendance/',
+  CONFIRM_ATTENDANCE: 'api/records/confirm_attendance/',
 };
 
 const getAccessToken = async () => {

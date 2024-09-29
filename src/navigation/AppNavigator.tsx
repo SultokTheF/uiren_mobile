@@ -28,7 +28,7 @@ const HomeStack = () => (
     <Stack.Screen name="Занятие" component={SectionDetailScreen} />
     <Stack.Screen name="Регистрация" component={RegisterScreen} />
     <Stack.Screen name="Вход" component={LoginScreen} />
-    <Stack.Screen name="Мои абонименты" component={MySubscriptionsScreen} />
+    <Stack.Screen name="Мои абонементы" component={MySubscriptionsScreen} />
     {/* <Stack.Screen name="Управление абонементом" component={ManageSubscriptionScreen} /> */}
   </Stack.Navigator>
 );
@@ -65,8 +65,12 @@ const AppNavigator = () => {
       <Tab.Screen name="Главная" component={HomeStack} />
       {/* <Tab.Screen name="Поиск" component={CentersSectionsScreen} /> */}
       {/* <Tab.Screen name="Расписание" component={ScheduleScreen} /> */}
+
       <Tab.Screen name="Карта" component={MapScreen} />
+      {/* <Tab.Screen name="Карта" component={ProfileScreen} /> */}
+
       <Tab.Screen name="QR" component={QRScannerScreen} />
+      {/* <Tab.Screen name="QR" component={ProfileScreen} /> */}
       <Tab.Screen
         name="Профиль"
         component={authContext?.user ? ProfileScreen : LoginScreen}

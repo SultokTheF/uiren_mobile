@@ -10,8 +10,7 @@ const QRScannerScreen: React.FC = () => {
   const [centerId, setCenterId] = useState<number | null>(null); // Store center_id
   const [records, setRecords] = useState<Record[]>([]);
   const [centers, setCenters] = useState<Center[]>([]); // Store centers
-  const [sections, setSections] = useState<Section[]>([]); // Store sections
-  const [schedules, setSchedules] = useState<Schedule[]>([]); // Store schedules
+  const [section, setSection] = useState<Section | null>(null); 
   const [loading, setLoading] = useState(false);
   const [userId] = useState(1); // Assuming userId is available from context or props
 
@@ -22,58 +21,35 @@ const QRScannerScreen: React.FC = () => {
     })();
   }, []);
 
-  // Helper functions
-  const getSectionName = (scheduleId: any): string => {
-    const schedule = schedules.find((sch) => sch.id === scheduleId);
-    const section = sections.find((section) => section.id === schedule?.section);
-    return section?.name || 'Неизвестное занятие';
-  };
+  const fetchSection = async ( section_id: number ) => {
+    try {
+      const response = await axiosInstance.get(`${endpoints.SECTIONS}${section_id}/`);
+      setSection(response.data);
+    } catch (error) {
+      Alert.alert('Ошибка', 'Не удалось загрузить секции');
+    }
+  }
 
-  const findScheduleTimes = (scheduleId: any): string => {
-    const schedule = schedules.find((sch) => sch.id === scheduleId);
-    return schedule ? `${schedule.start_time} - ${schedule.end_time}` : 'Неизвестное время';
-  };
-
-  const findCenterName = (centerId: any): string => {
-    const center = centers.find((center) => center.id === centerId);
-    return center?.name || 'Неизвестный центр';
-  };
-
-  const handleBarCodeScanned = ({ data }: { data: string }) => {
+  const handleBarCodeScanned = async ({ data }: { data: string }) => {
     setScanned(true);
     try {
       const correctedData = data.replace(/'/g, '"').replace(/\\/g, ''); // Correct the format
-      const parsedData = JSON.parse(correctedData); // Parse the corrected JSON
-      const { center_id } = parsedData;
-      setCenterId(center_id);
-      fetchCentersSectionsAndSchedules();
-      fetchRecords(center_id);
+      const parsedData = JSON.parse(correctedData);
+      const { section_id } = parsedData; // Use section_id from QR code
+      setCenterId(section_id);
+      fetchRecords(section_id); // Fetch records for the selected section
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось распознать QR-код');
     }
   };
 
-  const fetchCentersSectionsAndSchedules = async () => {
-    try {
-      const [centersResponse, sectionsResponse, schedulesResponse] = await Promise.all([
-        axiosInstance.get(`${endpoints.CENTERS}`, { params: { page: 'all' } }),
-        axiosInstance.get(`${endpoints.SECTIONS}`, { params: { page: 'all' } }),
-        axiosInstance.get(`${endpoints.SCHEDULES}`, { params: { page: 'all' } }),
-      ]);
-      setCenters(centersResponse.data);
-      setSections(sectionsResponse.data);
-      setSchedules(schedulesResponse.data);
-    } catch (error) {
-      Alert.alert('Ошибка', 'Не удалось загрузить данные центров, занятий и расписаний');
-    }
-  };
-
-  const fetchRecords = async (centerId: number) => {
+  const fetchRecords = async (sectionId: number) => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(`${endpoints.RECORDS}`, {
-        params: { page: 'all', attended: false, user: userId },
+        params: { page: 'all', attended: false, 'schedule__section': sectionId },
       });
+      fetchSection(sectionId);
       setRecords(response.data);
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось загрузить записи');
@@ -83,15 +59,9 @@ const QRScannerScreen: React.FC = () => {
   };
 
   const handleConfirmAttendance = async (recordId: number) => {
-    if (!centerId) {
-      Alert.alert('Ошибка', 'Центр не был определен');
-      return;
-    }
-
     try {
       await axiosInstance.post(endpoints.CONFIRM_ATTENDANCE, {
-        center_id: centerId,
-        record_id: recordId,
+        record_id: recordId, // Only send the record_id
       });
       Alert.alert('Успех', 'Посещение успешно подтверждено!');
       setScanned(false); // Reset for scanning another QR code
@@ -132,13 +102,16 @@ const QRScannerScreen: React.FC = () => {
                     onPress={() => handleConfirmAttendance(record.id)}
                   >
                     <Text style={styles.recordText}>
-                      Занятие: {getSectionName(record.schedule)} {/* Get section name */}
+                      Занятие: {section?.name}
                     </Text>
                     <Text style={styles.recordText}>
-                      Время: {findScheduleTimes(record.schedule)} {/* Get start_time and end_time */}
+                      Время: {record.schedule.start_time} - {record.schedule.end_time}
                     </Text>
                     <Text style={styles.recordText}>
-                      Центр: {findCenterName(centerId!)} {/* Get center name */}
+                      Подписка: {record.subscription.name} ({record.subscription.type})
+                    </Text>
+                    <Text style={styles.recordText}>
+                      Действует до: {new Date(record.subscription.end_date).toLocaleDateString()}
                     </Text>
                   </Pressable>
                 ))
@@ -183,10 +156,12 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
+    elevation: 3, // Add shadow effect for better visual
   },
   recordText: {
     fontSize: 16,
     color: '#333',
+    marginVertical: 2, // Slight vertical spacing between texts
   },
 });
 

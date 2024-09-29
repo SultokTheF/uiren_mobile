@@ -95,12 +95,12 @@ export interface Subscription {
   start_date: string;
   end_date: string | null;
   is_active: boolean;
+  is_activated_by_admin: boolean;
 }
 
 export interface Schedule {
   id: number;
   section: Section | number;
-  center: Center;
   date: string;
   start_time: string;
   end_time: string;
@@ -110,9 +110,10 @@ export interface Schedule {
 }
 
 export interface Record {
+  subscription: any;
   id: number;
   user: User;
-  schedule: Schedule | number;
+  schedule: Schedule;
   attended: boolean;
   section: Section;
 }
