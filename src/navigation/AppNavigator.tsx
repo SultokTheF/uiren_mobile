@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
+import MySubscriptionsScreen from '../screens/Subscriptions/MySubscriptionsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import QRScannerScreen from '../screens/QRScannerScreen'; // QR Scanner screen
 import MapScreen from '../screens/MapScreen'; // Map screen
@@ -13,6 +14,7 @@ import SectionDetailScreen from '../screens/CentersSections/SectionDetailScreen'
 import CenterDetailScreen from '../screens/CentersSections/CenterDetailScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
+import ManageSubscriptionScreen from '../screens/Subscriptions/ManageSubscriptionScreen';
 import { AuthContext } from '../contexts/AuthContext';
 
 const Tab = createBottomTabNavigator();
@@ -26,6 +28,8 @@ const HomeStack = () => (
     <Stack.Screen name="Занятие" component={SectionDetailScreen} />
     <Stack.Screen name="Регистрация" component={RegisterScreen} />
     <Stack.Screen name="Вход" component={LoginScreen} />
+    <Stack.Screen name="Мои абонименты" component={MySubscriptionsScreen} />
+    {/* <Stack.Screen name="Управление абонементом" component={ManageSubscriptionScreen} /> */}
   </Stack.Navigator>
 );
 

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { axiosInstance, endpoints } from '../../api/apiClient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { getRandomAbout } from '@/src/services/randomData';
-import { SectionDetailScreenNavigationProp, CenterDetailScreenNavigationProp } from '@/src/types/types';
+import { SectionDetailScreenNavigationProp, CenterDetailScreenNavigationProp, UniversalRouteProp } from '@/src/types/types';
 
 const CentersSectionsScreen: React.FC = () => {
   const [centers, setCenters] = useState<any[]>([]);
@@ -14,11 +14,17 @@ const CentersSectionsScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const route = useRoute<UniversalRouteProp<'Занятия и Центры'>>();
+  const categoryId = route.params?.category;
+
   const navigation = useNavigation<SectionDetailScreenNavigationProp & CenterDetailScreenNavigationProp>();
 
   const fetchCentersAndSections = async () => {
     try {
-      const params: any = {};
+      const params: any = {
+        page: 'all',
+        category: categoryId,
+      };
 
       if (searchQuery) {
         params.search = searchQuery;
@@ -27,8 +33,8 @@ const CentersSectionsScreen: React.FC = () => {
       const centersResponse = await axiosInstance.get(endpoints.CENTERS, { params });
       const sectionsResponse = await axiosInstance.get(endpoints.SECTIONS, { params });
 
-      setCenters(centersResponse.data.results);
-      setSections(sectionsResponse.data.results);
+      setCenters(centersResponse.data);
+      setSections(sectionsResponse.data);
       setLoading(false);
     } catch (error) {
       setError('Не удалось загрузить данные');

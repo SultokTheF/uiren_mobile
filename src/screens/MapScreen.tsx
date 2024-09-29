@@ -26,9 +26,15 @@ const MapScreen: React.FC = () => {
   // Fetch centers from API
   const fetchCenters = async () => {
     try {
-      const response = await axiosInstance.get(endpoints.CENTERS);
-      setCenters(response.data.results);
-      setFilteredCenters(response.data.results); // Initialize filtered centers
+      const response = await axiosInstance.get(endpoints.CENTERS, 
+        {
+          params: {
+            page: "all",
+          }
+        }
+      );
+      setCenters(response.data);
+      setFilteredCenters(response.data); // Initialize filtered centers
       setLoading(false);
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось загрузить центры');
@@ -150,7 +156,6 @@ const MapScreen: React.FC = () => {
         <View style={styles.bottomCard}>
           <Text style={styles.cardTitle}>{destination.name}</Text>
           <Text style={styles.cardSubtitle}>{destination.location}</Text>
-          <Text style={styles.descriptionText}>{destination.description}</Text>
           <View style={styles.transportOptions}>
             <TouchableOpacity
               style={[styles.optionButton, travelMode === 'DRIVING' && styles.activeButton]}

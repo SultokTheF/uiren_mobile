@@ -10,14 +10,16 @@ export type ButtonProps = {
 export type RootStackParamList = {
   Главная: undefined;
   Профиль: undefined;
-  Расписиние: undefined;
+  Расписание: undefined;
   Поиск: undefined;
   Карта: undefined;
-  "Занятия и Центры": undefined; // Add the Centers screen
-  "Центр" : { centerId: number }; // Add the CenterDetail screen with centerId param
-  "Занятие" : { sectionId: number }; // Add the SectionDetail screen with sectionId param
+  "Занятия и Центры": { category: number } | undefined;
+  "Центр": { centerId: number };
+  "Занятие": { sectionId: number };
   "Регистрация": undefined;
   "Вход": undefined;
+  "Мои абонементы": undefined;  // Add this new route
+  "Управление абонементом": { subscriptionId: number };
 };
 
 // Universal navigation prop for all screens
@@ -38,30 +40,35 @@ export type RegisterScreenRouteProp = RouteProp<RootStackParamList, 'Регис�
 export type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Вход'>;
 export type LoginScreenRouteProp = RouteProp<RootStackParamList, 'Вход'>;
 
+export type MySubscriptionsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Мои абонементы'>;
+export type MySubscriptionsScreenRouteProp = RouteProp<RootStackParamList, 'Мои абонементы'>;
+
+// Interfaces for Center, Section, Category, User based on Django models
 
 export interface Center {
   id: number;
   name: string;
-  description: string;
   location: string;
-  latitude: string;
-  longitude: string;
-  image: string;
-  sections: number[];
+  latitude: number | null;
+  longitude: number | null;
+  qr_code: string | null; // assuming a URL for the QR code
+  image: string | null; // assuming a URL for the image
+  description: string | null;
 }
 
 export interface Section {
   id: number;
   name: string;
-  description: string;
-  image: string;
-  centerId: number;
+  category: Category | number;
+  image: string | null; // Assuming a URL for the image
+  description: string | null;
+  centers: Center[]; // ManyToMany relationship with centers
 }
 
 export interface Category {
   id: number;
   name: string;
-  image: string;
+  image: string | null; // Assuming a URL for the image
 }
 
 export interface User {
@@ -71,7 +78,7 @@ export interface User {
   last_name: string;
   phone_number: string;
   iin?: string;
-  role: 'USER' | 'ADMIN' | 'CHILD' | 'PARENT';
+  role: 'USER' | 'ADMIN' | 'CHILD' | 'PARENT' | 'STAFF';
   is_active: boolean;
   is_staff: boolean;
   is_verified: boolean;
@@ -79,3 +86,42 @@ export interface User {
   parent?: User | null;
 }
 
+export interface Subscription {
+  id: number;
+  name: string;
+  user: User;
+  section: Section;
+  type: 'MONTH' | '6_MONTHS' | 'YEAR';
+  start_date: string;
+  end_date: string | null;
+  is_active: boolean;
+}
+
+export interface Schedule {
+  id: number;
+  section: Section | number;
+  center: Center;
+  date: string;
+  start_time: string;
+  end_time: string;
+  capacity: number;
+  reserved: number;
+  status: boolean;
+}
+
+export interface Record {
+  id: number;
+  user: User;
+  schedule: Schedule | number;
+  attended: boolean;
+  section: Section;
+}
+
+export interface Feedback {
+  id: number;
+  user: User;
+  text: string;
+  stars: 1 | 2 | 3 | 4 | 5;
+  center: Center;
+  created_at: string;
+}

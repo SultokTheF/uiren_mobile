@@ -24,11 +24,11 @@ const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [showAllCategories, setShowAllCategories] = useState(false);
-  
+
   const navigation = useNavigation<CenterDetailScreenNavigationProp>();
 
-  const handlePress = (centerId: number) => {
-    navigation.navigate('Центр', { centerId });  // Pass correct parameter
+  const handlePress = (category: number) => {
+    navigation.navigate('Занятия и Центры', { category });
   };
 
   const fetchCategories = async () => {
@@ -79,7 +79,7 @@ const HomeScreen: React.FC = () => {
       {/* Top Banner Section */}
       <View style={styles.topSection}>
         <Image
-          source={{ uri: "https://optim.tildacdn.pro/tild3466-6634-4261-a165-366230663830/-/resize/560x/-/format/webp/kjhygtf.png" }}
+          source={{ uri: "https://t4.ftcdn.net/jpg/04/30/13/89/360_F_430138951_otmGEbVlWbrpfbRBJaNMvkqVXTkCRx76.jpg" }}
           style={styles.bannerImage}
         />
       </View>
@@ -88,11 +88,13 @@ const HomeScreen: React.FC = () => {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Категории</Text>
-          <Pressable onPress={toggleShowAllCategories}>
-            <Text style={styles.viewAll}>
-              {showAllCategories ? 'Скрыть' : 'Смотреть все'}
-            </Text>
-          </Pressable>
+          {categories.length > 4 && (
+            <Pressable onPress={toggleShowAllCategories}>
+              <Text style={styles.viewAll}>
+                {showAllCategories ? 'Скрыть' : 'Смотреть все'}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         {loading ? (
@@ -105,7 +107,9 @@ const HomeScreen: React.FC = () => {
               <CategoryCard
                 key={category.id}
                 title={category.name}
-                imageUrl={category.image}
+                imageUrl={category.image || ""}
+                categoryId={category.id}
+                navigation={navigation}
               />
             ))}
           </View>
@@ -133,7 +137,7 @@ const HomeScreen: React.FC = () => {
                 onPress={() => navigation.navigate('Центр', { centerId: center.id })}
               >
                 <View style={styles.centerCard}>
-                  <Image source={{ uri: center.image }} style={styles.centerImage} />
+                  <Image source={{ uri: center.image || "" }} style={styles.centerImage} />
                   <View style={styles.centerInfo}>
                     <Icon name="business" size={20} color="#007aff" style={styles.centerIcon} />
                     <Text style={styles.centerTitle}>{center.name}</Text>
@@ -153,11 +157,20 @@ const HomeScreen: React.FC = () => {
 };
 
 // Category Card Component
-const CategoryCard: React.FC<{ title: string; imageUrl: string }> = ({ title, imageUrl }) => (
-  <View style={styles.categoryCard}>
+const CategoryCard: React.FC<{ 
+  title: string; 
+  imageUrl: string; 
+  categoryId: number; 
+  navigation: CenterDetailScreenNavigationProp 
+}> = ({ title, imageUrl, categoryId, navigation }) => (
+  <Pressable
+    key={categoryId}
+    onPress={() => navigation.navigate('Занятия и Центры', { category: categoryId })}
+    style={styles.categoryCard} // Use fixed styling for cards
+  >
     <Image source={{ uri: imageUrl }} style={styles.categoryIcon} />
     <Text style={styles.categoryText}>{title}</Text>
-  </View>
+  </Pressable>
 );
 
 const styles = StyleSheet.create({
@@ -214,22 +227,23 @@ const styles = StyleSheet.create({
   },
   categoryRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap', // Ensure cards wrap to the next line
+    justifyContent: 'space-between', // Even spacing between items
   },
   categoryCard: {
-    width: '48%',
-    height: 100,
+    width: '30%', // Fixed width to ensure consistent size (adjust based on your layout needs)
+    height: 120, // Fixed height for uniformity
     backgroundColor: '#fff',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
+    padding: 10,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 6,
   },
   categoryIcon: {
     width: 50,
@@ -238,9 +252,10 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   categoryText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: 'bold',
     textAlign: 'center',
+    color: '#333',
   },
   centerCard: {
     backgroundColor: '#fff',
