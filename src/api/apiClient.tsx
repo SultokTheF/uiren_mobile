@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://10.73.62.177:8000/';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://192.168.1.83:8000/';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -23,6 +23,7 @@ const endpoints = {
   RECORDS: 'api/records/',
   FEEDBACKS: 'api/feedbacks/',
   CONFIRM_ATTENDANCE: 'api/records/confirm_attendance/',
+  CANCEL_RESERVATION: 'api/records/cancel_reservation/', // Added endpoint
 };
 
 const getAccessToken = async () => {
@@ -61,7 +62,11 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      !originalRequest._retry
+    ) {
       originalRequest._retry = true;
       const newAccessToken = await refreshAccessToken();
       if (newAccessToken) {

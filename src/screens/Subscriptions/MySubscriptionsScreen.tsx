@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, Alert, TextInput, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TextInput,
+  Linking,
+  Modal,
+} from 'react-native';
 import { axiosInstance, endpoints } from '../../api/apiClient';
 import { AuthContext } from '../../contexts/AuthContext';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Animatable from 'react-native-animatable';
 import { Modalize } from 'react-native-modalize';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
@@ -10,21 +21,46 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 const MySubscriptionsScreen: React.FC = () => {
   LocaleConfig.locales['ru'] = {
     monthNames: [
-      'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
-      'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+      'Январь',
+      'Февраль',
+      'Март',
+      'Апрель',
+      'Май',
+      'Июнь',
+      'Июль',
+      'Август',
+      'Сентябрь',
+      'Октябрь',
+      'Ноябрь',
+      'Декабрь',
     ],
     monthNamesShort: [
-      'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 
-      'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
+      'Янв',
+      'Фев',
+      'Мар',
+      'Апр',
+      'Май',
+      'Июн',
+      'Июл',
+      'Авг',
+      'Сен',
+      'Окт',
+      'Ноя',
+      'Дек',
     ],
     dayNames: [
-      'Воскресенье', 'Понедельник', 'Вторник', 
-      'Среда', 'Четверг', 'Пятница', 'Суббота'
+      'Воскресенье',
+      'Понедельник',
+      'Вторник',
+      'Среда',
+      'Четверг',
+      'Пятница',
+      'Суббота',
     ],
     dayNamesShort: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
     today: 'Сегодня',
   };
-  
+
   LocaleConfig.defaultLocale = 'ru'; // Set the default locale to Russian
 
   const authContext = useContext(AuthContext);
@@ -39,7 +75,10 @@ const MySubscriptionsScreen: React.FC = () => {
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [section, setSection] = useState<any | null>(null);
   const [center, setCenter] = useState<any | null>(null);
-  
+  const [selectedRecordDetails, setSelectedRecordDetails] = useState<any | null>(null);
+  const [showRecordModal, setShowRecordModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+
   const bottomSheetRef = useRef<Modalize>(null);
   const calendarRef = useRef<Modalize>(null);
 
@@ -48,18 +87,22 @@ const MySubscriptionsScreen: React.FC = () => {
   const fetchSection = async (sectionId: number) => {
     try {
       const response = await axiosInstance.get(`${endpoints.SECTIONS}${sectionId}/`);
-      const responseCenter = await axiosInstance.get(`${endpoints.CENTERS}${response.data.center}/`);
+      const responseCenter = await axiosInstance.get(
+        `${endpoints.CENTERS}${response.data.center}/`
+      );
       return [response.data.name, responseCenter.data.name];
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось загрузить секции');
       return null;
     }
-  }
+  };
 
   const fetchSubscriptions = async () => {
     if (user) {
       try {
-        const response = await axiosInstance.get(`${endpoints.SUBSCRIPTIONS}?page=all&user_id=${user.id}`);
+        const response = await axiosInstance.get(
+          `${endpoints.SUBSCRIPTIONS}?page=all&user_id=${user.id}`
+        );
         setSubscriptions(response.data);
       } catch (error) {
         console.error('Ошибка при загрузке подписок:', error);
@@ -82,7 +125,7 @@ const MySubscriptionsScreen: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await axiosInstance.post(endpoints.SUBSCRIPTIONS, {
+      await axiosInstance.post(endpoints.SUBSCRIPTIONS, {
         type: subscriptionType,
       });
 
@@ -92,8 +135,14 @@ const MySubscriptionsScreen: React.FC = () => {
       fetchSubscriptions();
 
       // WhatsApp redirection with the specific phone number
-      const message = `Здравствуйте! Меня зовут ${user?.first_name} ${user?.last_name}. Я бы хотел купить подписку на ${subscriptionType === 'MONTH' ? 'месяц' : subscriptionType === '6_MONTHS' ? '6 месяцев' : 'год'}.`;
-      const phoneNumber = '77750452041'; // International format without symbols
+      const message = `Здравствуйте! Меня зовут ${user?.first_name} ${user?.last_name}. Я бы хотел купить подписку на ${
+        subscriptionType === 'MONTH'
+          ? 'месяц'
+          : subscriptionType === '6_MONTHS'
+          ? '6 месяцев'
+          : 'год'
+      }.`;
+      const phoneNumber = '77769955161'; // International format without symbols
       const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
       const supported = await Linking.canOpenURL(url);
 
@@ -155,24 +204,55 @@ const MySubscriptionsScreen: React.FC = () => {
     }
   };
 
+  const handleCancelReservation = async () => {
+    if (!selectedRecordDetails) return;
+
+    setIsCancelling(true);
+    try {
+      await axiosInstance.post(endpoints.CANCEL_RESERVATION, {
+        record_id: selectedRecordDetails.id,
+      });
+
+      Alert.alert('Успех', 'Резервирование успешно отменено.');
+      // Update the records
+      fetchRecords(selectedSubscription!);
+      setShowRecordModal(false);
+    } catch (error) {
+      Alert.alert('Ошибка', 'Не удалось отменить резервирование.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const renderCalendar = () => {
     const markedDates = records.reduce((acc, record) => {
       const date = new Date(record.schedule.date).toISOString().split('T')[0];
-      acc[date] = { marked: true, dotColor: '#007aff' };
+      if (record.is_canceled) {
+        acc[date] = { marked: true, dotColor: '#FF6347' }; // Red dot for canceled
+      } else {
+        acc[date] = { marked: true, dotColor: '#007aff' }; // Blue dot for active
+      }
       return acc;
-    }, {});  
-  
+    }, {});
+
     return (
       <Calendar
         current={new Date().toISOString().split('T')[0]}
         markedDates={markedDates}
         onDayPress={async (day: { dateString: string }) => {
-          const selectedRecord = records.find(record => record.schedule.date === day.dateString);
+          const selectedRecord = records.find(
+            (record) => record.schedule.date === day.dateString
+          );
           if (selectedRecord) {
             const sectionData = await fetchSection(selectedRecord.schedule.section);
-            const sectionName = sectionData ? sectionData[0] : 'Неизвестное занятие'; // Await the fetchSection call
-            const centerName = sectionData ? sectionData[1] : 'Неизвестный центр'; // Await the fetchSection call
-            Alert.alert('Запись', `Занятие: ${sectionName || 'Неизвестное занятие'}\nЦентр: ${centerName || 'Неизвестный центр'}\nВремя: ${selectedRecord.schedule.start_time} - ${selectedRecord.schedule.end_time}`);
+            const sectionName = sectionData ? sectionData[0] : 'Неизвестное занятие';
+            const centerName = sectionData ? sectionData[1] : 'Неизвестный центр';
+            setSelectedRecordDetails({
+              ...selectedRecord,
+              sectionName,
+              centerName,
+            });
+            setShowRecordModal(true);
           }
         }}
         theme={{
@@ -189,7 +269,6 @@ const MySubscriptionsScreen: React.FC = () => {
       />
     );
   };
-  
 
   const activeSubscriptions = subscriptions.filter((sub) => sub.is_activated_by_admin);
   const activatedByAdmin = subscriptions.filter((sub) => !sub.is_activated_by_admin);
@@ -198,6 +277,7 @@ const MySubscriptionsScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007aff" />
         <Text style={styles.loadingText}>Загрузка...</Text>
       </View>
     );
@@ -210,9 +290,14 @@ const MySubscriptionsScreen: React.FC = () => {
           <Animatable.View animation="fadeInUp" duration={1000}>
             <Text style={styles.activeTitle}>🎉 У вас есть активные подписки!</Text>
             {activeSubscriptions.map((sub) => (
-              <View key={sub.id} style={styles.subscriptionCard}>
+              <Animatable.View
+                key={sub.id}
+                animation="fadeInUp"
+                duration={800}
+                style={styles.subscriptionCard}
+              >
                 <View style={styles.iconContainer}>
-                  <Icon name="verified" size={40} color="#007aff" />
+                  <Icon name="check-circle" size={50} color="#4CAF50" />
                 </View>
                 <View style={styles.subscriptionInfo}>
                   {editingSub === sub.id ? (
@@ -221,66 +306,87 @@ const MySubscriptionsScreen: React.FC = () => {
                       value={newSubName}
                       onChangeText={setNewSubName}
                       placeholder="Введите новое название"
+                      placeholderTextColor="#888"
                     />
                   ) : (
-                    <Text style={styles.subscriptionTitle}>{sub.name} - {sub.type === "MONTH" && "Месяц"}{sub.type === "YEAR" && "Год"}{sub.type === "6_MONTHS" && "Полгода"}</Text>
+                    <Text style={styles.subscriptionTitle}>
+                      {sub.name} -{' '}
+                      {sub.type === 'MONTH' && 'Месяц'}
+                      {sub.type === 'YEAR' && 'Год'}
+                      {sub.type === '6_MONTHS' && 'Полгода'}
+                    </Text>
                   )}
                   <Text style={styles.subscriptionDate}>
-                    Действует с {new Date(sub.start_date).toLocaleDateString()} по {new Date(sub.end_date).toLocaleDateString()}
+                    Действует с {new Date(sub.start_date).toLocaleDateString()} по{' '}
+                    {new Date(sub.end_date).toLocaleDateString()}
                   </Text>
                   <Text style={styles.subscriptionStatus}>💪 Статус: Активная</Text>
                 </View>
 
                 {editingSub === sub.id ? (
-                  <TouchableOpacity style={styles.submitButton} onPress={() => handleEditSubmit(sub.id)}>
-                    <Text style={styles.submitButtonText}>Сохранить</Text>
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={() => handleEditSubmit(sub.id)}
+                  >
+                    <Icon name="content-save" size={24} color="#fff" />
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity style={styles.editButton} onPress={() => {
-                    setEditingSub(sub.id);
-                    setNewSubName(sub.name);
-                  }}>
-                    <Icon name="edit" size={24} color="#007aff" />
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => {
+                      setEditingSub(sub.id);
+                      setNewSubName(sub.name);
+                    }}
+                  >
+                    <Icon name="pencil" size={24} color="#007aff" />
                   </TouchableOpacity>
                 )}
 
-                <TouchableOpacity style={styles.historyButton} onPress={() => openCalendar(sub.id)}>
+                <TouchableOpacity
+                  style={styles.historyButton}
+                  onPress={() => openCalendar(sub.id)}
+                >
                   <Icon name="history" size={24} color="#007aff" />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(sub.id)}>
-                  <Icon name="delete" size={24} color="#FF6347" />
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDelete(sub.id)}
+                >
+                  <Icon name="trash-can" size={24} color="#FF6347" />
                 </TouchableOpacity>
-              </View>
+              </Animatable.View>
             ))}
 
             <TouchableOpacity style={styles.buyMoreButton} onPress={openBottomSheet}>
-              <Text style={styles.buyMoreText}>Купить ещё абонемент ➕</Text>
+              <Icon name="plus-circle" size={24} color="#fff" />
+              <Text style={styles.buyMoreText}>Купить ещё абонемент</Text>
             </TouchableOpacity>
           </Animatable.View>
         ) : (
           <View>
             <Text style={styles.noActiveText}>😔 У вас нет активных подписок</Text>
             <TouchableOpacity style={styles.buyMoreButton} onPress={openBottomSheet}>
-              <Text style={styles.buyMoreText}>Купить абонемент ➕</Text>
+              <Icon name="plus-circle" size={24} color="#fff" />
+              <Text style={styles.buyMoreText}>Купить абонемент</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Promotional Banners */}
         <View style={styles.bannersContainer}>
-          <View style={styles.banner}>
-            <Text>Абонемент на месяц - 20 000 ₸</Text>
-            <View style={styles.imagePlaceholder}></View>
-          </View>
-          <View style={styles.banner}>
-            <Text>Абонемент на 6 месяцев - 100 000 ₸</Text>
-            <View style={styles.imagePlaceholder}></View>
-          </View>
-          <View style={styles.banner}>
-            <Text>Абонемент на год - 180 000 ₸</Text>
-            <View style={styles.imagePlaceholder}></View>
-          </View>
+          <Animatable.View animation="slideInRight" duration={800} style={styles.banner}>
+            <View style={styles.emptySquare}></View>
+            <Text style={styles.bannerText}>Абонемент на месяц - 20 000 ₸</Text>
+          </Animatable.View>
+          <Animatable.View animation="slideInLeft" duration={800} style={styles.banner}>
+            <View style={styles.emptySquare}></View>
+            <Text style={styles.bannerText}>Абонемент на 6 месяцев - 100 000 ₸</Text>
+          </Animatable.View>
+          <Animatable.View animation="slideInRight" duration={800} style={styles.banner}>
+            <View style={styles.emptySquare}></View>
+            <Text style={styles.bannerText}>Абонемент на год - 180 000 ₸</Text>
+          </Animatable.View>
         </View>
       </ScrollView>
 
@@ -292,27 +398,61 @@ const MySubscriptionsScreen: React.FC = () => {
           <Text style={styles.modalLabel}>Выберите тип подписки:</Text>
           <View style={styles.subscriptionTypeContainer}>
             <TouchableOpacity
-              style={[styles.subscriptionTypeOption, subscriptionType === 'MONTH' && styles.subscriptionTypeSelected]}
+              style={[
+                styles.subscriptionTypeOption,
+                subscriptionType === 'MONTH' && styles.subscriptionTypeSelected,
+              ]}
               onPress={() => setSubscriptionType('MONTH')}
             >
-              <Text style={styles.subscriptionTypeText}>Месяц</Text>
+              <Text
+                style={[
+                  styles.subscriptionTypeText,
+                  subscriptionType === 'MONTH' && styles.subscriptionTypeTextSelected,
+                ]}
+              >
+                Месяц
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.subscriptionTypeOption, subscriptionType === '6_MONTHS' && styles.subscriptionTypeSelected]}
+              style={[
+                styles.subscriptionTypeOption,
+                subscriptionType === '6_MONTHS' && styles.subscriptionTypeSelected,
+              ]}
               onPress={() => setSubscriptionType('6_MONTHS')}
             >
-              <Text style={styles.subscriptionTypeText}>6 Месяцев</Text>
+              <Text
+                style={[
+                  styles.subscriptionTypeText,
+                  subscriptionType === '6_MONTHS' && styles.subscriptionTypeTextSelected,
+                ]}
+              >
+                6 Месяцев
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.subscriptionTypeOption, subscriptionType === 'YEAR' && styles.subscriptionTypeSelected]}
+              style={[
+                styles.subscriptionTypeOption,
+                subscriptionType === 'YEAR' && styles.subscriptionTypeSelected,
+              ]}
               onPress={() => setSubscriptionType('YEAR')}
             >
-              <Text style={styles.subscriptionTypeText}>Год</Text>
+              <Text
+                style={[
+                  styles.subscriptionTypeText,
+                  subscriptionType === 'YEAR' && styles.subscriptionTypeTextSelected,
+                ]}
+              >
+                Год
+              </Text>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.submitButtonText}>Оформить подписку</Text>}
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>Оформить подписку</Text>
+            )}
           </TouchableOpacity>
         </View>
       </Modalize>
@@ -331,6 +471,58 @@ const MySubscriptionsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </Modalize>
+
+      {/* Modal for Record Details */}
+      <Modal
+        visible={showRecordModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowRecordModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Animatable.View animation="zoomIn" duration={500} style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Детали записи</Text>
+            <Text style={styles.modalText}>
+              <Icon name="book" size={20} /> Занятие:{' '}
+              {selectedRecordDetails?.sectionName || 'Неизвестное занятие'}
+            </Text>
+            <Text style={styles.modalText}>
+              <Icon name="home-map-marker" size={20} /> Центр:{' '}
+              {selectedRecordDetails?.centerName || 'Неизвестный центр'}
+            </Text>
+            <Text style={styles.modalText}>
+              <Icon name="clock-outline" size={20} /> Время:{' '}
+              {selectedRecordDetails?.schedule?.start_time} -{' '}
+              {selectedRecordDetails?.schedule?.end_time}
+            </Text>
+            <Text style={styles.modalText}>
+              <Icon name="information" size={20} /> Статус:{' '}
+              {selectedRecordDetails?.is_canceled ? 'Отменена' : 'Активна'}
+            </Text>
+
+            {!selectedRecordDetails?.is_canceled && (
+              <TouchableOpacity style={styles.cancelButton} onPress={handleCancelReservation}>
+                {isCancelling ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.cancelButtonText}>Отменить запись</Text>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {selectedRecordDetails?.is_canceled && (
+              <Text style={styles.canceledText}>Эта запись уже отменена.</Text>
+            )}
+
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowRecordModal(false)}
+            >
+              <Icon name="close-circle" size={30} color="#FF6347" />
+            </TouchableOpacity>
+          </Animatable.View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -338,8 +530,7 @@ const MySubscriptionsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
-    padding: 20,
+    backgroundColor: '#F9F9FB',
   },
   loadingContainer: {
     flex: 1,
@@ -347,22 +538,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 16,
+    color: '#007aff',
+    marginTop: 10,
   },
   subscriptionCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 15,
+    padding: 15,
+    marginHorizontal: 20,
     marginBottom: 15,
-    elevation: 3,
+    elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
   },
   iconContainer: {
     width: 60,
     height: 60,
+    borderRadius: 30,
+    backgroundColor: '#E8F5E9',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -373,43 +571,53 @@ const styles = StyleSheet.create({
   subscriptionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#007aff',
+    color: '#333',
   },
   subscriptionInput: {
-    fontSize: 16,
+    fontSize: 18,
     borderBottomWidth: 1,
     borderColor: '#007aff',
+    color: '#333',
   },
   subscriptionDate: {
     fontSize: 14,
-    color: '#555',
+    color: '#777',
     marginTop: 5,
   },
   subscriptionStatus: {
     fontSize: 14,
-    color: '#28a745',
+    color: '#4CAF50',
     marginTop: 5,
   },
   activeTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#28a745',
+    color: '#333',
+    marginTop: 20,
     marginBottom: 10,
+    marginHorizontal: 20,
   },
   deleteButton: {
     marginLeft: 10,
   },
+  saveButton: {
+    marginLeft: 10,
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    padding: 6,
+  },
   submitButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#007aff',
     borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    flexDirection: 'row',
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   editButton: {
@@ -419,64 +627,83 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   buyMoreButton: {
-    backgroundColor: '#FFD700',
+    backgroundColor: '#007aff',
     borderRadius: 12,
     paddingVertical: 15,
+    marginHorizontal: 20,
     marginTop: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    flexDirection: 'row',
   },
   buyMoreText: {
-    color: '#333',
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    marginLeft: 8,
   },
   noActiveText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#777',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 50,
   },
   bannersContainer: {
-    marginTop: 20,
+    marginTop: 30,
+    marginBottom: 30,
   },
   banner: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 10,
+    borderRadius: 15,
+    padding: 15,
+    marginHorizontal: 20,
+    marginBottom: 15,
     elevation: 2,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
   },
-  imagePlaceholder: {
+  bannerImage: {
     width: '100%',
     height: 150,
-    backgroundColor: '#ddd',
-    marginTop: 10,
+    borderRadius: 10,
+  },
+  
+  // Adjust bannerImage style if necessary
+  bannerText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   bottomSheetContainer: {
     padding: 20,
     backgroundColor: '#fff',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color: '#333',
   },
   modalLabel: {
     fontSize: 16,
     marginBottom: 10,
+    color: '#555',
   },
   subscriptionTypeContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
   subscriptionTypeOption: {
     flex: 1,
-    paddingVertical: 10,
-    backgroundColor: '#f0f0f0',
+    paddingVertical: 15,
+    backgroundColor: '#F0F0F0',
     borderRadius: 8,
     marginHorizontal: 5,
     alignItems: 'center',
@@ -486,8 +713,12 @@ const styles = StyleSheet.create({
   },
   subscriptionTypeText: {
     color: '#333',
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
+  },
+  subscriptionTypeTextSelected: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   modalStyle: {
     borderTopLeftRadius: 20,
@@ -501,14 +732,69 @@ const styles = StyleSheet.create({
   closeButton: {
     marginTop: 20,
     backgroundColor: '#FF6347',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
+    marginHorizontal: 20,
   },
   closeButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 25,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 10,
+    textAlign: 'left',
+    width: '100%',
+    color: '#333',
+  },
+  cancelButton: {
+    marginTop: 20,
+    backgroundColor: '#FF6347',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  canceledText: {
+    fontSize: 16,
+    color: '#FF6347',
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  emptySquare: {
+    width: '100%',
+    height: 150,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: -15,
+    right: -15,
+    backgroundColor: '#fff',
+    borderRadius: 15,
   },
 });
 

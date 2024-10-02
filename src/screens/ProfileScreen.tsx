@@ -60,10 +60,10 @@ const ProfileScreen: React.FC = () => {
         <Text style={styles.value}>{user.phone_number}</Text>
       </View>
 
-      {/* Мои абонименты Button */}
+      {/* Мои абонементы Button */}
       <TouchableOpacity style={styles.subscriptionButton} onPress={() => navigation.navigate('Мои абонементы')}>
         <Icon name="subscriptions" size={24} color="#fff" />
-        <Text style={styles.subscriptionText}>Мои абонименты</Text>
+        <Text style={styles.subscriptionText}>Мои абонементы</Text>
       </TouchableOpacity>
 
       {/* Logout Button with original logic */}
