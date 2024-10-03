@@ -349,12 +349,12 @@ const MySubscriptionsScreen: React.FC = () => {
                   <Icon name="history" size={24} color="#007aff" />
                 </TouchableOpacity>
 
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={() => handleDelete(sub.id)}
                 >
                   <Icon name="trash-can" size={24} color="#FF6347" />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </Animatable.View>
             ))}
 
