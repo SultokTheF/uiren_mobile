@@ -1,41 +1,77 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, Image } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
+import MapView, { Marker, Region } from 'react-native-maps';
 import { axiosInstance, endpoints } from '../api/apiClient';
 import * as Location from 'expo-location';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import MapViewDirections from 'react-native-maps-directions';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { CenterDetailScreenNavigationProp } from '@/src/types/types';
 
-const GOOGLE_MAPS_APIKEY = 'AIzaSyCN-x4jF1BZ9UoWD144d4vH4ocal-EDz5k';
+const GOOGLE_MAPS_APIKEY = 'AIzaSyBAVkETmTSFkRbC-Vix0DJ7HbjWYPQ8Xa8';
+
+type MapScreenRouteProp = RouteProp<{ Map: { centerId?: number } }, 'Map'>;
 
 const MapScreen: React.FC = () => {
+  const route = useRoute<MapScreenRouteProp>();
+  const navigation = useNavigation<CenterDetailScreenNavigationProp>();
+  const { centerId } = route.params || {};
   const [centers, setCenters] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>(''); // For search input
   const [filteredCenters, setFilteredCenters] = useState<any[]>([]);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [destination, setDestination] = useState<{ id: number; latitude: number; longitude: number; name: string; location: string; description: string } | null>(null);
+  const [destination, setDestination] = useState<{
+    id: number;
+    latitude: number;
+    longitude: number;
+    name: string;
+    location: string;
+    description: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [travelMode, setTravelMode] = useState<'DRIVING' | 'WALKING'>('DRIVING'); // Default mode is driving
   const [duration, setDuration] = useState<number | null>(null);
-
-  // Use navigation to navigate to the center details screen
-  const navigation = useNavigation<CenterDetailScreenNavigationProp>();
+  const [region, setRegion] = useState<Region | undefined>(undefined);
 
   // Fetch centers from API
   const fetchCenters = async () => {
     try {
-      const response = await axiosInstance.get(endpoints.CENTERS, 
-        {
-          params: {
-            page: "all",
-          }
-        }
-      );
+      const response = await axiosInstance.get(endpoints.CENTERS, {
+        params: {
+          page: 'all',
+        },
+      });
       setCenters(response.data);
       setFilteredCenters(response.data); // Initialize filtered centers
       setLoading(false);
+
+      if (centerId) {
+        const selectedCenter = response.data.find((center: any) => center.id === centerId);
+        if (selectedCenter) {
+          const initialRegion = {
+            latitude: parseFloat(selectedCenter.latitude),
+            longitude: parseFloat(selectedCenter.longitude),
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          };
+          setRegion(initialRegion);
+          setDestination({
+            id: selectedCenter.id,
+            latitude: parseFloat(selectedCenter.latitude),
+            longitude: parseFloat(selectedCenter.longitude),
+            name: selectedCenter.name,
+            location: selectedCenter.location,
+            description: selectedCenter.description,
+          });
+        }
+      }
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось загрузить центры');
       setLoading(false);
@@ -46,7 +82,10 @@ const MapScreen: React.FC = () => {
   const getUserLocation = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Доступ отклонен', 'Для использования этой функции требуется разрешение на доступ к местоположению.');
+      Alert.alert(
+        'Доступ отклонен',
+        'Для использования этой функции требуется разрешение на доступ к местоположению.'
+      );
       return;
     }
 
@@ -57,6 +96,23 @@ const MapScreen: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    fetchCenters();
+    getUserLocation();
+  }, []);
+
+  // Update region when userLocation is available and no centerId
+  useEffect(() => {
+    if (userLocation && !centerId) {
+      setRegion({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
+    }
+  }, [userLocation, centerId]);
+
   // Filter centers based on search query
   useEffect(() => {
     const filtered = centers.filter((center) =>
@@ -64,12 +120,6 @@ const MapScreen: React.FC = () => {
     );
     setFilteredCenters(filtered);
   }, [searchQuery, centers]);
-
-  // Initial fetch and location retrieval
-  useEffect(() => {
-    fetchCenters();
-    getUserLocation();
-  }, []);
 
   // Handle marker press, update destination
   const handleMarkerPress = (center: any) => {
@@ -80,6 +130,12 @@ const MapScreen: React.FC = () => {
       name: center.name,
       location: center.location,
       description: center.description,
+    });
+    setRegion({
+      latitude: parseFloat(center.latitude),
+      longitude: parseFloat(center.longitude),
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
     });
   };
 
@@ -112,25 +168,18 @@ const MapScreen: React.FC = () => {
 
       <MapView
         style={styles.map}
-        initialRegion={{
-          latitude: userLocation?.latitude || 51.089432,
-          longitude: userLocation?.longitude || 71.416020,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-        region={userLocation ? { // Center the map on user's location
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        } : undefined}
-        showsUserLocation={true} // Display the user's location on the map
+        region={region}
+        onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
+        showsUserLocation={true}
       >
         {/* Markers for each center */}
         {filteredCenters.map((center) => (
           <Marker
             key={center.id}
-            coordinate={{ latitude: parseFloat(center.latitude), longitude: parseFloat(center.longitude) }}
+            coordinate={{
+              latitude: parseFloat(center.latitude),
+              longitude: parseFloat(center.longitude),
+            }}
             title={center.name}
             description={center.description}
             onPress={() => handleMarkerPress(center)} // Set destination when marker is pressed
@@ -161,28 +210,39 @@ const MapScreen: React.FC = () => {
               style={[styles.optionButton, travelMode === 'DRIVING' && styles.activeButton]}
               onPress={() => handleModeChange('DRIVING')}
             >
-              <Icon name="directions-car" size={24} color={travelMode === 'DRIVING' ? '#fff' : '#007aff'} />
-              <Text style={travelMode === 'DRIVING' ? styles.activeOptionText : styles.optionText}>На машине</Text>
+              <Icon
+                name="directions-car"
+                size={24}
+                color={travelMode === 'DRIVING' ? '#fff' : '#007aff'}
+              />
+              <Text
+                style={travelMode === 'DRIVING' ? styles.activeOptionText : styles.optionText}
+              >
+                На машине
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.optionButton, travelMode === 'WALKING' && styles.activeButton]}
               onPress={() => handleModeChange('WALKING')}
             >
-              <Icon name="directions-walk" size={24} color={travelMode === 'WALKING' ? '#fff' : '#007aff'} />
-              <Text style={travelMode === 'WALKING' ? styles.activeOptionText : styles.optionText}>Пешком</Text>
+              <Icon
+                name="directions-walk"
+                size={24}
+                color={travelMode === 'WALKING' ? '#fff' : '#007aff'}
+              />
+              <Text
+                style={travelMode === 'WALKING' ? styles.activeOptionText : styles.optionText}
+              >
+                Пешком
+              </Text>
             </TouchableOpacity>
           </View>
 
           {duration && (
-            <Text style={styles.estimateText}>
-              Время в пути: {Math.round(duration)} мин
-            </Text>
+            <Text style={styles.estimateText}>Время в пути: {Math.round(duration)} мин</Text>
           )}
 
-          <TouchableOpacity
-            style={styles.navigateButton}
-            onPress={handleNavigateToCenter} // Navigate to center details screen when pressed
-          >
+          <TouchableOpacity style={styles.navigateButton} onPress={handleNavigateToCenter}>
             <Text style={styles.navigateButtonText}>Перейти к центру</Text>
           </TouchableOpacity>
         </View>
@@ -197,7 +257,7 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     position: 'absolute',
-    top: 50,
+    top: 20,
     left: 10,
     right: 10,
     zIndex: 1,

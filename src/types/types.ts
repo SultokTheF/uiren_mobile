@@ -12,7 +12,7 @@ export type RootStackParamList = {
   Профиль: undefined;
   Расписание: undefined;
   Поиск: undefined;
-  Карта: undefined;
+  "Карта": { centerId: number };
   "Занятия и Центры": { category: number } | undefined;
   "Центр": { centerId: number };
   "Занятие": { sectionId: number };
@@ -117,6 +117,7 @@ export interface Record {
   attended: boolean;
   section: Section;
 }
+
 
 export interface Feedback {
   id: number;

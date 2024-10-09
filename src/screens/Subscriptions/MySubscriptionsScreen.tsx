@@ -10,6 +10,7 @@ import {
   TextInput,
   Linking,
   Modal,
+  Dimensions,
 } from 'react-native';
 import { axiosInstance, endpoints } from '../../api/apiClient';
 import { AuthContext } from '../../contexts/AuthContext';
@@ -17,6 +18,36 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Animatable from 'react-native-animatable';
 import { Modalize } from 'react-native-modalize';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
+
+interface RecordType {
+  id: number;
+  user: number;
+  schedule: {
+    id: number;
+    section: number;
+    date: string;
+    start_time: string;
+    end_time: string;
+    capacity: number;
+    reserved: number;
+    status: boolean;
+  };
+  attended: boolean;
+  subscription: {
+    id: number;
+    name: string;
+    user: number;
+    type: string;
+    start_date: string;
+    end_date: string;
+    is_active: boolean;
+    is_activated_by_admin: boolean;
+  };
+  is_canceled: boolean;
+  sectionName?: string;
+  centerName?: string;
+}
+
 
 const MySubscriptionsScreen: React.FC = () => {
   LocaleConfig.locales['ru'] = {
@@ -73,11 +104,10 @@ const MySubscriptionsScreen: React.FC = () => {
   const [selectedSubscription, setSelectedSubscription] = useState<number | null>(null);
   const [records, setRecords] = useState<any[]>([]); // Store subscription records
   const [loadingRecords, setLoadingRecords] = useState(false);
-  const [section, setSection] = useState<any | null>(null);
-  const [center, setCenter] = useState<any | null>(null);
-  const [selectedRecordDetails, setSelectedRecordDetails] = useState<any | null>(null);
+  const [selectedDateRecords, setSelectedDateRecords] = useState<any[]>([]);
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [cancellingRecordId, setCancellingRecordId] = useState<number | null>(null);
 
   const bottomSheetRef = useRef<Modalize>(null);
   const calendarRef = useRef<Modalize>(null);
@@ -204,29 +234,38 @@ const MySubscriptionsScreen: React.FC = () => {
     }
   };
 
-  const handleCancelReservation = async () => {
-    if (!selectedRecordDetails) return;
-
+  const handleCancelReservation = async (recordId: number) => {
     setIsCancelling(true);
+    setCancellingRecordId(recordId);
     try {
       await axiosInstance.post(endpoints.CANCEL_RESERVATION, {
-        record_id: selectedRecordDetails.id,
+        record_id: recordId,
       });
 
       Alert.alert('Успех', 'Резервирование успешно отменено.');
       // Update the records
       fetchRecords(selectedSubscription!);
-      setShowRecordModal(false);
+      // Update the records for the selected date
+      const updatedDateRecords = selectedDateRecords.map((record) =>
+        record.id === recordId ? { ...record, is_canceled: true } : record
+      );
+      setSelectedDateRecords(updatedDateRecords);
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось отменить резервирование.');
     } finally {
       setIsCancelling(false);
+      setCancellingRecordId(null);
     }
+  };
+
+  const formatTime = (timeString: string) => {
+    const [hours, minutes] = timeString.split(':');
+    return `${hours}:${minutes}`;
   };
 
   const renderCalendar = () => {
     const markedDates = records.reduce((acc, record) => {
-      const date = new Date(record.schedule.date).toISOString().split('T')[0];
+      const date = record.schedule.date;
       if (record.is_canceled) {
         acc[date] = { marked: true, dotColor: '#FF6347' }; // Red dot for canceled
       } else {
@@ -240,19 +279,48 @@ const MySubscriptionsScreen: React.FC = () => {
         current={new Date().toISOString().split('T')[0]}
         markedDates={markedDates}
         onDayPress={async (day: { dateString: string }) => {
-          const selectedRecord = records.find(
-            (record) => record.schedule.date === day.dateString
-          );
-          if (selectedRecord) {
-            const sectionData = await fetchSection(selectedRecord.schedule.section);
-            const sectionName = sectionData ? sectionData[0] : 'Неизвестное занятие';
-            const centerName = sectionData ? sectionData[1] : 'Неизвестный центр';
-            setSelectedRecordDetails({
-              ...selectedRecord,
-              sectionName,
-              centerName,
+          try {
+            setLoadingRecords(true);
+            const response = await axiosInstance.get(`${endpoints.RECORDS}`, {
+              params: {
+                page: 'all',
+                schedule__date: day.dateString,
+                subscription: selectedSubscription,
+              },
             });
-            setShowRecordModal(true);
+            const dateRecords = response.data;
+
+            if (dateRecords.length > 0) {
+              // Sort the records by start time
+              dateRecords.sort((a: RecordType, b: RecordType) => {
+                const timeA = Date.parse(`1970-01-01T${a.schedule.start_time}`);
+                const timeB = Date.parse(`1970-01-01T${b.schedule.start_time}`);
+                return timeA - timeB;
+              });
+
+              // Map over the records to get section and center names
+              const recordsWithDetails = await Promise.all(
+                dateRecords.map(async (record: any) => {
+                  const sectionData = await fetchSection(record.schedule.section);
+                  const sectionName = sectionData ? sectionData[0] : 'Неизвестное занятие';
+                  const centerName = sectionData ? sectionData[1] : 'Неизвестный центр';
+                  return {
+                    ...record,
+                    sectionName,
+                    centerName,
+                  };
+                })
+              );
+
+              setSelectedDateRecords(recordsWithDetails);
+              setShowRecordModal(true);
+            } else {
+              Alert.alert('Записей нет', 'На выбранную дату нет записей для этой подписки.');
+            }
+          } catch (error) {
+            Alert.alert('Ошибка', 'Не удалось загрузить записи на выбранную дату.');
+          } finally {
+            setLoadingRecords(false);
           }
         }}
         theme={{
@@ -348,13 +416,6 @@ const MySubscriptionsScreen: React.FC = () => {
                 >
                   <Icon name="history" size={24} color="#007aff" />
                 </TouchableOpacity>
-
-                {/* <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => handleDelete(sub.id)}
-                >
-                  <Icon name="trash-can" size={24} color="#FF6347" />
-                </TouchableOpacity> */}
               </Animatable.View>
             ))}
 
@@ -482,37 +543,49 @@ const MySubscriptionsScreen: React.FC = () => {
         <View style={styles.modalOverlay}>
           <Animatable.View animation="zoomIn" duration={500} style={styles.modalContent}>
             <Text style={styles.modalTitle}>Детали записи</Text>
-            <Text style={styles.modalText}>
-              <Icon name="book" size={20} /> Занятие:{' '}
-              {selectedRecordDetails?.sectionName || 'Неизвестное занятие'}
-            </Text>
-            <Text style={styles.modalText}>
-              <Icon name="home-map-marker" size={20} /> Центр:{' '}
-              {selectedRecordDetails?.centerName || 'Неизвестный центр'}
-            </Text>
-            <Text style={styles.modalText}>
-              <Icon name="clock-outline" size={20} /> Время:{' '}
-              {selectedRecordDetails?.schedule?.start_time} -{' '}
-              {selectedRecordDetails?.schedule?.end_time}
-            </Text>
-            <Text style={styles.modalText}>
-              <Icon name="information" size={20} /> Статус:{' '}
-              {selectedRecordDetails?.is_canceled ? 'Отменена' : 'Активна'}
-            </Text>
+            <ScrollView
+              style={{ width: '100%' }}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {selectedDateRecords.map((record) => (
+                <View key={record.id} style={styles.recordItem}>
+                  <Text style={styles.recordTitle}>
+                    {record.sectionName || 'Неизвестное занятие'}
+                  </Text>
+                  <Text style={styles.modalText}>
+                    <Icon name="home-map-marker" size={20} /> {record.centerName || 'Неизвестный центр'}
+                  </Text>
+                  <Text style={styles.modalText}>
+                    <Icon name="clock-outline" size={20} /> Время:{' '}
+                    {formatTime(record.schedule.start_time)} -{' '}
+                    {formatTime(record.schedule.end_time)}
+                  </Text>
+                  <Text style={styles.modalText}>
+                    <Icon name="check-circle-outline" size={20} /> Посетил:{' '}
+                    {record.attended ? 'Да' : 'Нет'}
+                  </Text>
 
-            {!selectedRecordDetails?.is_canceled && (
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancelReservation}>
-                {isCancelling ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.cancelButtonText}>Отменить запись</Text>
-                )}
-              </TouchableOpacity>
-            )}
+                  {!record.is_canceled && (
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => handleCancelReservation(record.id)}
+                    >
+                      {isCancelling && cancellingRecordId === record.id ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.cancelButtonText}>Отменить запись</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
 
-            {selectedRecordDetails?.is_canceled && (
-              <Text style={styles.canceledText}>Эта запись уже отменена.</Text>
-            )}
+                  {record.is_canceled && (
+                    <Text style={styles.canceledText}>Эта запись уже отменена.</Text>
+                  )}
+
+                  <View style={styles.separator} />
+                </View>
+              ))}
+            </ScrollView>
 
             <TouchableOpacity
               style={styles.modalCloseButton}
@@ -666,13 +739,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
   },
-  bannerImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 10,
-  },
-  
-  // Adjust bannerImage style if necessary
   bannerText: {
     fontSize: 16,
     color: '#333',
@@ -755,19 +821,35 @@ const styles = StyleSheet.create({
     padding: 25,
     alignItems: 'center',
     position: 'relative',
+    maxHeight: '80%',
   },
   modalText: {
     fontSize: 16,
-    marginBottom: 10,
+    marginBottom: 5,
     textAlign: 'left',
-    width: '100%',
+    color: '#555',
+  },
+  recordItem: {
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#F9F9FB',
+    borderRadius: 10,
+  },
+  recordTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
     color: '#333',
   },
+  separator: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 10,
+  },
   cancelButton: {
-    marginTop: 20,
+    marginTop: 10,
     backgroundColor: '#FF6347',
-    paddingVertical: 12,
-    paddingHorizontal: 25,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
@@ -779,8 +861,9 @@ const styles = StyleSheet.create({
   canceledText: {
     fontSize: 16,
     color: '#FF6347',
-    marginTop: 20,
+    marginTop: 10,
     textAlign: 'center',
+    fontWeight: 'bold',
   },
   emptySquare: {
     width: '100%',

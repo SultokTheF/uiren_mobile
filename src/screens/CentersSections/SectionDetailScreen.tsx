@@ -32,7 +32,7 @@ const SectionDetailScreen: React.FC = () => {
   // Generate next 7 days for date selection
   const generateDates = () => {
     const newDates = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 5; i++) {
       const date = moment().add(i, 'days').format('YYYY-MM-DD');
       newDates.push(date);
     }
@@ -176,8 +176,8 @@ const SectionDetailScreen: React.FC = () => {
       </ScrollView>
 
       {/* Bottom Sheet for selecting schedule */}
-      <Modalize 
-        ref={bottomSheetRef} 
+      <Modalize
+        ref={bottomSheetRef}
         adjustToContentHeight={true} // Dynamic height
         handlePosition="inside"
         modalStyle={styles.modalStyle}
@@ -212,8 +212,11 @@ const SectionDetailScreen: React.FC = () => {
                 disabled={!schedule.status}
               >
                 <Text style={styles.scheduleText}>
-                  {schedule.start_time} - {schedule.end_time} ({schedule.reserved} из {schedule.capacity})
+                  {new Date(`1970-01-01T${schedule.start_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                  {new Date(`1970-01-01T${schedule.end_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  ({schedule.reserved} из {schedule.capacity})
                 </Text>
+
               </Pressable>
             ))}
           </ScrollView>
@@ -233,7 +236,7 @@ const SectionDetailScreen: React.FC = () => {
                     onPress={() => handleSubscriptionSelect(subscription.id)}
                   >
                     <Text style={styles.scheduleText}>
-                      {subscription.name} ({subscription.type}) до {moment(subscription.end_date).format('DD-MM-YYYY')}
+                      {subscription.name} 
                     </Text>
                   </Pressable>
                 ))}

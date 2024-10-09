@@ -29,6 +29,7 @@ const HomeStack = () => (
     <Stack.Screen name="Регистрация" component={RegisterScreen} />
     <Stack.Screen name="Вход" component={LoginScreen} />
     <Stack.Screen name="Мои абонементы" component={MySubscriptionsScreen} />
+    <Stack.Screen name="Карта" component={MapScreen} /> 
     {/* <Stack.Screen name="Управление абонементом" component={ManageSubscriptionScreen} /> */}
   </Stack.Navigator>
 );
