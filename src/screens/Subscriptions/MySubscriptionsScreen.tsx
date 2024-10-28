@@ -10,7 +10,6 @@ import {
   TextInput,
   Linking,
   Modal,
-  Dimensions,
   Image
 } from 'react-native';
 import { axiosInstance, endpoints } from '../../api/apiClient';
@@ -32,7 +31,7 @@ interface RecordType {
     capacity: number;
     reserved: number;
     status: boolean;
-    meeting_link: string | null; // Add this field
+    meeting_link: string | null;
   };
   attended: boolean;
   subscription: {
@@ -49,8 +48,6 @@ interface RecordType {
   sectionName?: string;
   centerName?: string;
 }
-
-
 
 const MySubscriptionsScreen: React.FC = () => {
   LocaleConfig.locales['ru'] = {
@@ -168,12 +165,9 @@ const MySubscriptionsScreen: React.FC = () => {
       fetchSubscriptions();
 
       // WhatsApp redirection with the specific phone number
-      const message = `Здравствуйте! Меня зовут ${user?.first_name} ${user?.last_name}. Я бы хотел купить подписку на ${subscriptionType === 'MONTH'
-        ? 'месяц'
-        : subscriptionType === '6_MONTHS'
-          ? '6 месяцев'
-          : 'год'
-        }.`;
+      const message = `Здравствуйте! Меня зовут ${user?.first_name} ${user?.last_name}. Я бы хотел купить подписку на ${
+        subscriptionType === 'MONTH' ? 'месяц' : subscriptionType === '6_MONTHS' ? '6 месяцев' : 'год'
+      }.`;
       const phoneNumber = '7757064732'; // International format without symbols
       const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
       const supported = await Linking.canOpenURL(url);
@@ -257,6 +251,52 @@ const MySubscriptionsScreen: React.FC = () => {
     } finally {
       setIsCancelling(false);
       setCancellingRecordId(null);
+    }
+  };
+
+  const handleFreezeSubscription = async (subscriptionId: number) => {
+    Alert.prompt(
+      "Заморозить подписку",
+      "Введите количество дней для заморозки:",
+      async (freezeDays) => {
+        if (!freezeDays) {
+          Alert.alert("Ошибка", "Количество дней обязательно.");
+          return;
+        }
+
+        const freezeDaysInt = parseInt(freezeDays, 10);
+        if (isNaN(freezeDaysInt) || freezeDaysInt <= 0) {
+          Alert.alert("Ошибка", "Пожалуйста, введите корректное количество дней.");
+          return;
+        }
+
+        try {
+          // Optionally, show a loading indicator
+          const response = await axiosInstance.post(
+            `${endpoints.SUBSCRIPTIONS}${subscriptionId}/freeze/`,
+            { freeze_days: freezeDaysInt }
+          );
+          Alert.alert("Успех", "Подписка успешно заморожена.");
+          fetchSubscriptions(); // Refresh the subscriptions list
+        } catch (error) {
+          console.error(error);
+          Alert.alert("Ошибка", "Не удалось заморозить подписку.");
+        }
+      }
+    );
+  };
+
+  const handleUnfreezeSubscription = async (subscriptionId: number) => {
+    try {
+      // Optionally, show a loading indicator
+      const response = await axiosInstance.post(
+        `${endpoints.SUBSCRIPTIONS}${subscriptionId}/unfreeze/`
+      );
+      Alert.alert("Успех", "Подписка успешно разморожена.");
+      fetchSubscriptions(); // Refresh the subscriptions list
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Ошибка", "Не удалось разморозить подписку.");
     }
   };
 
@@ -393,31 +433,50 @@ const MySubscriptionsScreen: React.FC = () => {
                   <Text style={styles.subscriptionStatus}>💪 Статус: Активная</Text>
                 </View>
 
-                {editingSub === sub.id ? (
-                  <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={() => handleEditSubmit(sub.id)}
-                  >
-                    <Icon name="content-save" size={24} color="#fff" />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => {
-                      setEditingSub(sub.id);
-                      setNewSubName(sub.name);
-                    }}
-                  >
-                    <Icon name="pencil" size={24} color="#007aff" />
-                  </TouchableOpacity>
-                )}
+                {/* Action Buttons Container */}
+                <View style={styles.actionButtonsContainer}>
+                  {editingSub === sub.id ? (
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleEditSubmit(sub.id)}
+                    >
+                      <Icon name="content-save" size={20} color="#fff" />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => {
+                        setEditingSub(sub.id);
+                        setNewSubName(sub.name);
+                      }}
+                    >
+                      <Icon name="pencil" size={20} color="#007aff" />
+                    </TouchableOpacity>
+                  )}
 
-                <TouchableOpacity
-                  style={styles.historyButton}
-                  onPress={() => openCalendar(sub.id)}
-                >
-                  <Icon name="history" size={24} color="#007aff" />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => openCalendar(sub.id)}
+                  >
+                    <Icon name="history" size={20} color="#007aff" />
+                  </TouchableOpacity>
+
+                  {/* Freeze/Unfreeze Icon Button */}
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() =>
+                      sub.is_frozen
+                        ? handleUnfreezeSubscription(sub.id)
+                        : handleFreezeSubscription(sub.id)
+                    }
+                  >
+                    <Icon
+                      name={sub.is_frozen ? "play-circle-outline" : "snowflake"}
+                      size={20}
+                      color={sub.is_frozen ? "#4CAF50" : "#FF6347"}
+                    />
+                  </TouchableOpacity>
+                </View>
               </Animatable.View>
             ))}
 
@@ -468,7 +527,6 @@ const MySubscriptionsScreen: React.FC = () => {
             <Text style={styles.bannerText}>Абонемент на год - 180 000 ₸</Text>
           </Animatable.View>
         </View>
-
       </ScrollView>
 
       {/* Bottom Sheet for Subscription Purchase */}
@@ -705,14 +763,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginHorizontal: 20,
   },
-  deleteButton: {
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginLeft: 10,
   },
-  saveButton: {
+  actionButton: {
     marginLeft: 10,
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
     padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
   },
   submitButton: {
     backgroundColor: '#007aff',
@@ -727,12 +787,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  editButton: {
-    marginLeft: 10,
-  },
-  historyButton: {
-    marginLeft: 10,
   },
   buyMoreButton: {
     backgroundColor: '#007aff',
@@ -774,11 +828,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
   },
-  bannerImage: { // ← Add this style
+  bannerImage: {
     width: '100%', // Makes the image take full width of the banner
-    height: 150,    // Adjust the height as needed
+    height: 150, // Adjust the height as needed
     marginBottom: 10, // Space between image and text
-    borderRadius: 10,  // Optional: Rounded corners
+    borderRadius: 10, // Optional: Rounded corners
   },
   bannerText: {
     fontSize: 16,
