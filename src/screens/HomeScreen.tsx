@@ -8,8 +8,11 @@ import {
   Pressable,
   ActivityIndicator,
   Image,
+  Linking,
+  Alert, // Import Alert for user feedback
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // For phone icon
+import FontAwesome from 'react-native-vector-icons/FontAwesome'; // For Instagram and WhatsApp icons
 import { axiosInstance, endpoints } from '../api/apiClient';
 import { useNavigation } from '@react-navigation/native';
 import { Category, Center, CenterDetailScreenNavigationProp } from '../types/types';
@@ -68,12 +71,62 @@ const HomeScreen: React.FC = () => {
     : categories.slice(0, 4);
   const lastThreeCenters = centers.slice(-3);
 
+  // Handler for Instagram press
+  const handleInstagramPress = () => {
+    const instagramUrl = 'https://instagram.com/yourprofile'; // Replace with your Instagram URL
+    Linking.openURL(instagramUrl).catch(err => {
+      console.error('Failed to open Instagram:', err);
+      Alert.alert('Error', 'Unable to open Instagram.');
+    });
+  };
+
+  // Handler for WhatsApp press
+  const handleWhatsAppPress = () => {
+    const phoneNumber = '77071098841'; // Replace with your WhatsApp number in international format without '+' and spaces
+    const whatsappUrl = `whatsapp://send?phone=${phoneNumber}`;
+    Linking.openURL(whatsappUrl).catch(err => {
+      console.error('Failed to open WhatsApp:', err);
+      Alert.alert('Error', 'Unable to open WhatsApp. Please make sure WhatsApp is installed.');
+    });
+  };
+
+  // Handler for Phone press
+  const handlePhonePress = () => {
+    const phoneNumber = '+77071098841'; // Ensure the phone number is in the correct format
+    Linking.openURL(`tel:${phoneNumber}`).catch(err => {
+      console.error('Failed to make a phone call:', err);
+      Alert.alert('Error', 'Unable to make a phone call.');
+    });
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* Header Section */}
       <View style={styles.header}>
         <Image source={require('../assets/icons/logo.png')} style={styles.logo} />
-        <Icon name="notifications-none" size={28} color="#555" style={styles.bellIcon} />
+        <View style={styles.headerButtons}>
+          <Pressable
+            onPress={handleInstagramPress}
+            style={styles.iconButton}
+            accessibilityLabel="Open Instagram Profile"
+          >
+            <FontAwesome name="instagram" size={30} color="#C13584" />
+          </Pressable>
+          <Pressable
+            onPress={handleWhatsAppPress}
+            style={styles.iconButton}
+            accessibilityLabel="Open WhatsApp Chat"
+          >
+            <FontAwesome name="whatsapp" size={30} color="#25D366" />
+          </Pressable>
+          <Pressable
+            onPress={handlePhonePress}
+            style={styles.iconButton}
+            accessibilityLabel="Call +7 707 109 88 41"
+          >
+            <Icon name="phone" size={30} color="#007aff" />
+          </Pressable>
+        </View>
       </View>
 
       {/* Top Banner Section */}
@@ -188,12 +241,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 100,
+    height: 100,
     resizeMode: 'contain',
   },
-  bellIcon: {
-    paddingRight: 10,
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    marginLeft: 15, // Increased margin for better spacing
   },
   topSection: {
     backgroundColor: '#fff',
