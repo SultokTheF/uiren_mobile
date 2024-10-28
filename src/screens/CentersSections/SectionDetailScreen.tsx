@@ -199,6 +199,7 @@ const SectionDetailScreen: React.FC = () => {
           </ScrollView>
 
           {/* Schedule List */}
+          {/* Schedule List */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scheduleList}>
             {filteredSchedules.map((schedule) => (
               <Pressable
@@ -212,11 +213,9 @@ const SectionDetailScreen: React.FC = () => {
                 disabled={!schedule.status}
               >
                 <Text style={styles.scheduleText}>
-                  {new Date(`1970-01-01T${schedule.start_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
-                  {new Date(`1970-01-01T${schedule.end_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {moment(schedule.start_time, 'HH:mm:ss').format('HH:mm')} - {moment(schedule.end_time, 'HH:mm:ss').format('HH:mm')}
                   ({schedule.reserved} из {schedule.capacity})
                 </Text>
-
               </Pressable>
             ))}
           </ScrollView>
@@ -236,7 +235,7 @@ const SectionDetailScreen: React.FC = () => {
                     onPress={() => handleSubscriptionSelect(subscription.id)}
                   >
                     <Text style={styles.scheduleText}>
-                      {subscription.name} 
+                      {subscription.name}
                     </Text>
                   </Pressable>
                 ))}
