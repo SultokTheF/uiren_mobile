@@ -9,10 +9,11 @@ import {
   ActivityIndicator,
   Image,
   Linking,
-  Alert, // Import Alert for user feedback
+  Alert,
+  Dimensions, // Import Dimensions for responsive design
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons'; // For phone icon
-import FontAwesome from 'react-native-vector-icons/FontAwesome'; // For Instagram and WhatsApp icons
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { axiosInstance, endpoints } from '../api/apiClient';
 import { useNavigation } from '@react-navigation/native';
 import { Category, Center, CenterDetailScreenNavigationProp } from '../types/types';
@@ -71,18 +72,17 @@ const HomeScreen: React.FC = () => {
     : categories.slice(0, 4);
   const lastThreeCenters = centers.slice(-3);
 
-  // Handler for Instagram press
+  // Handlers for social media and phone
   const handleInstagramPress = () => {
-    const instagramUrl = 'https://instagram.com/yourprofile'; // Replace with your Instagram URL
+    const instagramUrl = 'https://www.instagram.com/uiren__kz/'; // Replace with your Instagram URL
     Linking.openURL(instagramUrl).catch(err => {
       console.error('Failed to open Instagram:', err);
       Alert.alert('Error', 'Unable to open Instagram.');
     });
   };
 
-  // Handler for WhatsApp press
   const handleWhatsAppPress = () => {
-    const phoneNumber = '77071098841'; // Replace with your WhatsApp number in international format without '+' and spaces
+    const phoneNumber = '+77073478844'; // Replace with your WhatsApp number in international format without '+' and spaces
     const whatsappUrl = `whatsapp://send?phone=${phoneNumber}`;
     Linking.openURL(whatsappUrl).catch(err => {
       console.error('Failed to open WhatsApp:', err);
@@ -90,7 +90,6 @@ const HomeScreen: React.FC = () => {
     });
   };
 
-  // Handler for Phone press
   const handlePhonePress = () => {
     const phoneNumber = '+77071098841'; // Ensure the phone number is in the correct format
     Linking.openURL(`tel:${phoneNumber}`).catch(err => {
@@ -99,8 +98,25 @@ const HomeScreen: React.FC = () => {
     });
   };
 
+  // Responsive Banner Dimensions
+  const [currentWidth, setCurrentWidth] = useState(Dimensions.get('window').width);
+
+  useEffect(() => {
+    const handleChange = ({ window }: { window: { width: number; height: number } }) => {
+      setCurrentWidth(window.width);
+    };
+
+    const subscription = Dimensions.addEventListener('change', handleChange);
+
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
+
+  const BANNER_ASPECT_RATIO = 1028 / 487; // ≈2.11
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContainer} style={styles.container}>
       {/* Header Section */}
       <View style={styles.header}>
         <Image source={require('../assets/icons/logo.png')} style={styles.logo} />
@@ -130,10 +146,24 @@ const HomeScreen: React.FC = () => {
       </View>
 
       {/* Top Banner Section */}
-      <View style={styles.topSection}>
+      <View
+        style={[
+          styles.topSection,
+          {
+            width: currentWidth, // Full device width
+            aspectRatio: BANNER_ASPECT_RATIO,
+            maxHeight: currentWidth / BANNER_ASPECT_RATIO, // Maintain aspect ratio
+          },
+        ]}
+      >
         <Image
-          source={{ uri: "https://t4.ftcdn.net/jpg/04/30/13/89/360_F_430138951_otmGEbVlWbrpfbRBJaNMvkqVXTkCRx76.jpg" }}
+          source={require('../assets/images/main page banner.png')}
           style={styles.bannerImage}
+          resizeMode="cover"
+          onError={(error) => {
+            console.error('Failed to load banner image:', error);
+            Alert.alert('Error', 'Failed to load banner image.');
+          }}
         />
       </View>
 
@@ -231,11 +261,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f2f2f2',
   },
+  scrollContainer: {
+    // Ensure no extra padding/margin affects the banner
+    padding: 0,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 20, // Retain padding for header
     paddingTop: 10,
     paddingBottom: 10,
     backgroundColor: '#fff',
@@ -250,23 +284,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconButton: {
-    marginLeft: 15, // Increased margin for better spacing
+    marginLeft: 15,
   },
   topSection: {
+    // marginTop: 10,
     backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 30,
+    paddingVertical: 10, // Adjusted padding
     alignItems: 'center',
+    // Removed paddingHorizontal and width to allow full screen width
   },
   bannerImage: {
+    marginTop: 20,
     width: '100%',
-    height: 200,
-    borderRadius: 15,
-    marginBottom: 10,
+    height: '100%', // Fill the topSection
+    borderRadius: 15, // Optional: remove if not desired
+    resizeMode: 'cover',
   },
   section: {
     marginTop: 30,
-    paddingHorizontal: 20,
+    paddingHorizontal: 20, // Retain padding for content sections
     marginBottom: 30,
   },
   sectionHeader: {
@@ -288,7 +324,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', // Even spacing between items
   },
   categoryCard: {
-    width: '30%', // Fixed width to ensure consistent size (adjust based on your layout needs)
+    width: '30%', // Fixed width to ensure consistent size
     height: 120, // Fixed height for uniformity
     backgroundColor: '#fff',
     borderRadius: 10,
