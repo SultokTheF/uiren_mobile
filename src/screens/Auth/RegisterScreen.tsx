@@ -17,7 +17,19 @@ const RegisterScreen: React.FC = () => {
 
   const navigation = useNavigation<LoginScreenNavigationProp>();
 
+  // Функция валидации пароля
+  const validatePassword = (password: string): boolean => {
+    const regex = /^(?=.*\d).{8,}$/; // Минимум 8 символов и хотя бы одна цифра
+    return regex.test(password);
+  };
+
   const handleRegister = async () => {
+    // Проверка пароля перед регистрацией
+    if (!validatePassword(password)) {
+      setError('Пароль должен быть не менее 8 символов и содержать хотя бы одну цифру.');
+      return;
+    }
+
     try {
       const response = await axiosInstance.post('/user/users/', {
         email,
@@ -42,7 +54,7 @@ const RegisterScreen: React.FC = () => {
         ]
       );
     } catch (err) {
-      setError('Регистрация не удалась.');
+      setError('Регистрация не удалась. Проверьте введенные данные и попробуйте снова.');
     }
   };
 
@@ -57,7 +69,7 @@ const RegisterScreen: React.FC = () => {
           value={email}
           onChangeText={setEmail}
           style={styles.input}
-          placeholderTextColor="#666" // Higher contrast for iOS
+          placeholderTextColor="#666" // Higher contrast for placeholder
           keyboardType="email-address"
           autoCapitalize="none"
         />

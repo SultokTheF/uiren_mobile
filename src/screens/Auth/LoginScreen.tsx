@@ -14,7 +14,19 @@ const LoginScreen: React.FC = () => {
 
   const navigation = useNavigation<RegisterScreenNavigationProp>();
 
+  // Функция валидации пароля
+  const validatePassword = (password: string): boolean => {
+    const regex = /^(?=.*\d).{8,}$/; // Минимум 8 символов и хотя бы одна цифра
+    return regex.test(password);
+  };
+
   const handleLogin = async () => {
+    // Простая валидация пароля
+    if (!validatePassword(password)) {
+      setError('Пароль должен быть не менее 8 символов и содержать хотя бы одну цифру.');
+      return;
+    }
+
     if (authContext?.login) { // Ensure login function exists
       try {
         await authContext.login(email, password); // Call login from AuthContext
