@@ -189,7 +189,7 @@ const HomeScreen: React.FC = () => {
             {displayedCategories.map((category) => (
               <CategoryCard
                 key={category.id}
-                title={category.name}
+                // title={category.name}
                 imageUrl={category.image || ""}
                 categoryId={category.id}
                 navigation={navigation}
@@ -241,18 +241,18 @@ const HomeScreen: React.FC = () => {
 
 // Category Card Component
 const CategoryCard: React.FC<{ 
-  title: string; 
+  // title: string; 
   imageUrl: string; 
   categoryId: number; 
   navigation: CenterDetailScreenNavigationProp 
-}> = ({ title, imageUrl, categoryId, navigation }) => (
+}> = ({ imageUrl, categoryId, navigation }) => (
   <Pressable
     key={categoryId}
     onPress={() => navigation.navigate('Занятия и Центры', { category: categoryId })}
     style={styles.categoryCard} // Use fixed styling for cards
   >
     <Image source={{ uri: imageUrl }} style={styles.categoryIcon} />
-    <Text style={styles.categoryText}>{title}</Text>
+    {/* <Text style={styles.categoryText}>{title}</Text> */}
   </Pressable>
 );
 
@@ -324,14 +324,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', // Even spacing between items
   },
   categoryCard: {
-    width: '30%', // Fixed width to ensure consistent size
-    height: 120, // Fixed height for uniformity
+    width: 100, // Set fixed width to 560 pixels
+    height: 100, // Set fixed height to 560 pixels
     backgroundColor: '#fff',
-    borderRadius: 10,
+    marginRight: 15,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
-    padding: 10,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 4 },
@@ -339,16 +339,9 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   categoryIcon: {
-    width: 50,
-    height: 50,
-    marginBottom: 10,
-    resizeMode: 'contain',
-  },
-  categoryText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#333',
+    width: '100%', // Make sure the image takes full width of the card
+    height: '100%', // Make sure the image takes full height of the card
+    resizeMode: 'cover', // Cover mode to fill the card with the image
   },
   centerCard: {
     backgroundColor: '#fff',

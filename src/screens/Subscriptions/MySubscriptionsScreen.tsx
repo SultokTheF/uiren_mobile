@@ -10,7 +10,7 @@ import {
   TextInput,
   Linking,
   Modal,
-  Image
+  Image,
 } from 'react-native';
 import { axiosInstance, endpoints } from '../../api/apiClient';
 import { AuthContext } from '../../contexts/AuthContext';
@@ -254,49 +254,45 @@ const MySubscriptionsScreen: React.FC = () => {
     }
   };
 
-  const handleFreezeSubscription = async (subscriptionId: number) => {
-    Alert.prompt(
-      "Заморозить подписку",
-      "Введите количество дней для заморозки:",
-      async (freezeDays) => {
-        if (!freezeDays) {
-          Alert.alert("Ошибка", "Количество дней обязательно.");
-          return;
-        }
+  const handleFreezeSubscription = async (subscriptionId: number, subscriptionType: string) => {
+    let freezeDays: number;
 
-        const freezeDaysInt = parseInt(freezeDays, 10);
-        if (isNaN(freezeDaysInt) || freezeDaysInt <= 0) {
-          Alert.alert("Ошибка", "Пожалуйста, введите корректное количество дней.");
-          return;
-        }
+    switch (subscriptionType) {
+      case 'MONTH':
+        freezeDays = 7;
+        break;
+      case '6_MONTHS':
+        freezeDays = 14;
+        break;
+      case 'YEAR':
+        freezeDays = 30;
+        break;
+      default:
+        freezeDays = 7; // Default to 7 days if type is unknown
+    }
 
-        try {
-          // Optionally, show a loading indicator
-          const response = await axiosInstance.post(
-            `${endpoints.SUBSCRIPTIONS}${subscriptionId}/freeze/`,
-            { freeze_days: freezeDaysInt }
-          );
-          Alert.alert("Успех", "Подписка успешно заморожена.");
-          fetchSubscriptions(); // Refresh the subscriptions list
-        } catch (error) {
-          console.error(error);
-          Alert.alert("Ошибка", "Не удалось заморозить подписку.");
-        }
-      }
-    );
+    try {
+      // Optionally, show a loading indicator or disable the button
+      await axiosInstance.post(`${endpoints.SUBSCRIPTIONS}${subscriptionId}/freeze/`, {
+        freeze_days: freezeDays,
+      });
+      Alert.alert('Успех', `Подписка успешно заморожена на ${freezeDays} дней.`);
+      fetchSubscriptions(); // Refresh the subscriptions list
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Ошибка', 'Не удалось заморозить подписку.');
+    }
   };
 
   const handleUnfreezeSubscription = async (subscriptionId: number) => {
     try {
       // Optionally, show a loading indicator
-      const response = await axiosInstance.post(
-        `${endpoints.SUBSCRIPTIONS}${subscriptionId}/unfreeze/`
-      );
-      Alert.alert("Успех", "Подписка успешно разморожена.");
+      await axiosInstance.post(`${endpoints.SUBSCRIPTIONS}${subscriptionId}/unfreeze/`);
+      Alert.alert('Успех', 'Подписка успешно разморожена.');
       fetchSubscriptions(); // Refresh the subscriptions list
     } catch (error) {
       console.error(error);
-      Alert.alert("Ошибка", "Не удалось разморозить подписку.");
+      Alert.alert('Ошибка', 'Не удалось разморозить подписку.');
     }
   };
 
@@ -467,13 +463,13 @@ const MySubscriptionsScreen: React.FC = () => {
                     onPress={() =>
                       sub.is_frozen
                         ? handleUnfreezeSubscription(sub.id)
-                        : handleFreezeSubscription(sub.id)
+                        : handleFreezeSubscription(sub.id, sub.type)
                     }
                   >
                     <Icon
-                      name={sub.is_frozen ? "play-circle-outline" : "snowflake"}
+                      name={sub.is_frozen ? 'play-circle-outline' : 'snowflake'}
                       size={20}
-                      color={sub.is_frozen ? "#4CAF50" : "#FF6347"}
+                      color={sub.is_frozen ? '#4CAF50' : '#FF6347'}
                     />
                   </TouchableOpacity>
                 </View>
