@@ -11,6 +11,10 @@ const ProfileScreen: React.FC = () => {
   const authContext = useContext(AuthContext);
   const navigation = useNavigation<MySubscriptionsScreenNavigationProp>();
 
+  const goToSubscriptions = () => {
+    navigation.navigate('Главная', { screen: 'Мои абонементы' });
+  };
+
   if (!authContext?.user) {
     return (
       <View style={styles.container}>
@@ -61,7 +65,7 @@ const ProfileScreen: React.FC = () => {
       </View>
 
       {/* Мои абонементы Button */}
-      <TouchableOpacity style={styles.subscriptionButton} onPress={() => navigation.navigate('Мои абонементы')}>
+      <TouchableOpacity style={styles.subscriptionButton} onPress={goToSubscriptions}>
         <Icon name="subscriptions" size={24} color="#fff" />
         <Text style={styles.subscriptionText}>Мои абонементы</Text>
       </TouchableOpacity>

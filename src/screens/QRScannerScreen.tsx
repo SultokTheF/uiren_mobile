@@ -1,55 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, Button, ScrollView, Alert, Pressable, ActivityIndicator } from 'react-native';
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import React, { useState } from 'react';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Button, StyleSheet, Text, View, Alert, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { axiosInstance, endpoints } from '../api/apiClient';
-import { Record, Center, Section, Schedule } from '../types/types'; // Assuming these types are defined
+import { Record, Section } from '../types/types';
 
 const QRScannerScreen: React.FC = () => {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const [centerId, setCenterId] = useState<number | null>(null); // Store center_id
+  const [sectionId, setSectionId] = useState<number | null>(null);
   const [records, setRecords] = useState<Record[]>([]);
-  const [centers, setCenters] = useState<Center[]>([]); // Store centers
-  const [section, setSection] = useState<Section | null>(null); 
+  const [section, setSection] = useState<Section | null>(null);
   const [loading, setLoading] = useState(false);
-  const [userId] = useState(1); // Assuming userId is available from context or props
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
-
-  const fetchSection = async ( section_id: number ) => {
+  // Fetch section details
+  const fetchSection = async (section_id: number) => {
     try {
       const response = await axiosInstance.get(`${endpoints.SECTIONS}${section_id}/`);
       setSection(response.data);
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось загрузить секции');
     }
-  }
+  };
 
-  const handleBarCodeScanned = async ({ data }: { data: string }) => {
+  // Handle QR code scan
+  const handleBarcodeScanned = async ({ data }: { data: string }) => {
     setScanned(true);
     try {
       const correctedData = data.replace(/'/g, '"').replace(/\\/g, ''); // Correct the format
       const parsedData = JSON.parse(correctedData);
-      const { section_id } = parsedData; // Use section_id from QR code
-      setCenterId(section_id);
-      fetchRecords(section_id); // Fetch records for the selected section
+      const { section_id } = parsedData;
+      setSectionId(section_id);
+      await fetchRecords(section_id); // Fetch records for the selected section
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось распознать QR-код');
+      setScanned(false);
     }
   };
 
+  // Fetch records based on section ID
   const fetchRecords = async (sectionId: number) => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(`${endpoints.RECORDS}`, {
         params: { page: 'all', attended: false, 'schedule__section': sectionId },
       });
-      fetchSection(sectionId);
+      await fetchSection(sectionId);
       setRecords(response.data);
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось загрузить записи');
@@ -58,32 +53,44 @@ const QRScannerScreen: React.FC = () => {
     }
   };
 
+  // Confirm attendance
   const handleConfirmAttendance = async (recordId: number) => {
     try {
       await axiosInstance.post(endpoints.CONFIRM_ATTENDANCE, {
-        record_id: recordId, // Only send the record_id
+        record_id: recordId,
       });
       Alert.alert('Успех', 'Посещение успешно подтверждено!');
-      setScanned(false); // Reset for scanning another QR code
-      setRecords([]); // Clear the records list after confirmation
+      setScanned(false);
+      setRecords([]);
     } catch (error) {
       Alert.alert('Ошибка', 'Не удалось подтвердить посещение');
     }
   };
 
-  if (hasPermission === null) {
-    return <Text>Запрашиваем разрешение на доступ к камере</Text>;
+  if (!permission) {
+    // Camera permissions are still loading.
+    return <View />;
   }
 
-  if (hasPermission === false) {
-    return <Text>Нет доступа к камере</Text>;
+  if (!permission.granted) {
+    // Camera permissions are not granted yet.
+    return (
+      <View style={styles.permissionContainer}>
+        <Text style={styles.message}>Нам нужно ваше разрешение, чтобы показать камеру</Text>
+        <Button onPress={requestPermission} title="Предоставить разрешение" />
+      </View>
+    );
   }
 
   return (
     <View style={styles.container}>
-      <BarCodeScanner
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-        style={StyleSheet.absoluteFillObject}
+      <CameraView
+        style={styles.camera}
+        facing="back" // Specify the back camera
+        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+        barcodeScannerSettings={{
+          barcodeTypes: ["qr"], // Only scan QR codes
+        }}
       />
       {scanned && (
         <View style={styles.recordsContainer}>
@@ -128,17 +135,29 @@ const QRScannerScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  permissionContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  recordsContainer: {
+  message: {
+    textAlign: 'center',
+    paddingBottom: 10,
+  },
+  camera: {
     flex: 1,
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    marginTop: 50,
-    width: '90%',
+  },
+  recordsContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     maxHeight: '60%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   title: {
     fontSize: 18,
@@ -156,12 +175,12 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
-    elevation: 3, // Add shadow effect for better visual
+    elevation: 3,
   },
   recordText: {
     fontSize: 16,
     color: '#333',
-    marginVertical: 2, // Slight vertical spacing between texts
+    marginVertical: 2,
   },
 });
 

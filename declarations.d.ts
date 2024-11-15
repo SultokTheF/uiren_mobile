@@ -4,6 +4,8 @@ declare module 'react-native-vector-icons/MaterialIcons' {
   export default MaterialIcons;
 }
 
+declare module '@react-navigation/bottom-tabs'
+
 declare module 'react-native-vector-icons/FontAwesome' {
   import { IconProps } from 'react-native-vector-icons/Icon';
   const MaterialIcons: React.FC<IconProps>;

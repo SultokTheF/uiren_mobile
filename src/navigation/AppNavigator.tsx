@@ -7,8 +7,8 @@ import SearchScreen from '../screens/SearchScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
 import MySubscriptionsScreen from '../screens/Subscriptions/MySubscriptionsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import QRScannerScreen from '../screens/QRScannerScreen'; // QR Scanner screen
-import MapScreen from '../screens/MapScreen'; // Map screen
+import QRScannerScreen from '../screens/QRScannerScreen';
+import MapScreen from '../screens/MapScreen';
 import CentersSectionsScreen from '../screens/CentersSections/CentersSectionsScreen';
 import SectionDetailScreen from '../screens/CentersSections/SectionDetailScreen';
 import CenterDetailScreen from '../screens/CentersSections/CenterDetailScreen';
@@ -29,8 +29,7 @@ const HomeStack = () => (
     <Stack.Screen name="Регистрация" component={RegisterScreen} />
     <Stack.Screen name="Вход" component={LoginScreen} />
     <Stack.Screen name="Мои абонементы" component={MySubscriptionsScreen} />
-    <Stack.Screen name="Карта" component={MapScreen} /> 
-    {/* <Stack.Screen name="Управление абонементом" component={ManageSubscriptionScreen} /> */}
+    <Stack.Screen name="Карта" component={MapScreen} />
   </Stack.Navigator>
 );
 
@@ -43,11 +42,9 @@ const AppNavigator = () => {
         tabBarIcon: ({ color, size }) => {
           let iconName;
           if (route.name === 'Главная') iconName = 'home';
-          // if (route.name === 'Поиск') iconName = 'search';
-          // if (route.name === 'Расписание') iconName = 'calendar-today';
           if (route.name === 'Профиль') iconName = 'person';
-          if (route.name === 'Карта') iconName = 'map';  // Map tab icon
-          if (route.name === 'QR') iconName = 'qr-code-scanner'; // QR tab icon
+          if (route.name === 'Карта') iconName = 'map';
+          if (route.name === 'QR') iconName = 'qr-code-scanner';
           return <Icon name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#007aff',
@@ -64,14 +61,8 @@ const AppNavigator = () => {
       })}
     >
       <Tab.Screen name="Главная" component={HomeStack} />
-      {/* <Tab.Screen name="Поиск" component={CentersSectionsScreen} /> */}
-      {/* <Tab.Screen name="Расписание" component={ScheduleScreen} /> */}
-
       <Tab.Screen name="Карта" component={MapScreen} />
-      {/* <Tab.Screen name="Карта" component={ProfileScreen} /> */}
-
       <Tab.Screen name="QR" component={QRScannerScreen} />
-      {/* <Tab.Screen name="QR" component={ProfileScreen} /> */}
       <Tab.Screen
         name="Профиль"
         component={authContext?.user ? ProfileScreen : LoginScreen}
