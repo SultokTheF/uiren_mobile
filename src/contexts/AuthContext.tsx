@@ -29,13 +29,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      await loginService(email, password);
+      await loginService(email, password); // Ensure this throws an error if login fails
       const userInfo = await getUserInfo();
+      if (!userInfo) {
+        throw new Error('Failed to fetch user info after login.');
+      }
       setUser(userInfo);
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Login failed:', error.message || error);
+      throw new Error('Неверные данные для входа'); // Explicitly throw error to be caught in LoginScreen
     }
-  };
+  };  
 
   const handleLogout = async () => {
     await logoutService();

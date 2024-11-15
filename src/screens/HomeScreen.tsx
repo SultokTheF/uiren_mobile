@@ -31,6 +31,10 @@ const HomeScreen: React.FC = () => {
 
   const navigation = useNavigation<CenterDetailScreenNavigationProp>();
 
+  const goToSubscriptions = () => {
+    navigation.navigate('Главная', { screen: 'Мои абонементы' });
+  };
+
   const handlePress = (category: number) => {
     navigation.navigate('Занятия и Центры', { category });
   };
@@ -146,7 +150,8 @@ const HomeScreen: React.FC = () => {
       </View>
 
       {/* Top Banner Section */}
-      <View
+      <Pressable
+        onPress={goToSubscriptions} // Call the goToSubscriptions function on press
         style={[
           styles.topSection,
           {
@@ -155,6 +160,7 @@ const HomeScreen: React.FC = () => {
             maxHeight: currentWidth / BANNER_ASPECT_RATIO, // Maintain aspect ratio
           },
         ]}
+        accessibilityLabel="Navigate to Subscriptions"
       >
         <Image
           source={require('../assets/images/main page banner.png')}
@@ -165,7 +171,8 @@ const HomeScreen: React.FC = () => {
             Alert.alert('Error', 'Failed to load banner image.');
           }}
         />
-      </View>
+      </Pressable>
+
 
       {/* Categories Section */}
       <View style={styles.section}>
@@ -240,11 +247,11 @@ const HomeScreen: React.FC = () => {
 };
 
 // Category Card Component
-const CategoryCard: React.FC<{ 
+const CategoryCard: React.FC<{
   // title: string; 
-  imageUrl: string; 
-  categoryId: number; 
-  navigation: CenterDetailScreenNavigationProp 
+  imageUrl: string;
+  categoryId: number;
+  navigation: CenterDetailScreenNavigationProp
 }> = ({ imageUrl, categoryId, navigation }) => (
   <Pressable
     key={categoryId}

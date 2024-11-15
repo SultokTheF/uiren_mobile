@@ -1,47 +1,67 @@
 import React, { useState, useContext } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { AuthContext } from '../../contexts/AuthContext';
-import { useNavigation } from '@react-navigation/native'; // For navigation to registration
+import { useNavigation } from '@react-navigation/native';
 import * as Animatable from 'react-native-animatable';
 import { RegisterScreenNavigationProp } from '../../types/types';
+import { axiosInstance, endpoints } from '@/src/api/apiClient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const LoginScreen: React.FC = () => {
-  const authContext = useContext(AuthContext); // Get the context
+  const authContext = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const navigation = useNavigation<RegisterScreenNavigationProp>();
 
-  // Функция валидации пароля
   const validatePassword = (password: string): boolean => {
-    const regex = /^(?=.*\d).{8,}$/; // Минимум 8 символов и хотя бы одна цифра
+    const regex = /^(?=.*\d).{8,}$/;
     return regex.test(password);
   };
 
   const handleLogin = async () => {
-    // Простая валидация пароля
     if (!validatePassword(password)) {
       setError('Пароль должен быть не менее 8 символов и содержать хотя бы одну цифру.');
       return;
     }
-
-    if (authContext?.login) { // Ensure login function exists
+  
+    if (authContext?.login) {
       try {
-        await authContext.login(email, password); // Call login from AuthContext
+        await authContext.login(email, password);
         setError(null);
         Alert.alert('Успешный вход', `Добро пожаловать, ${email.split('@')[0]}!`);
       } catch (err) {
-        setError('Неверный логин или пароль.');
+        setError(err.message || 'Неверный логин или пароль.');
       }
     }
-  };
+  };  
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Ошибка', 'Пожалуйста, введите ваш email.');
+      return;
+    }
+  
+    try {
+      const response = await axiosInstance.post(endpoints.PASSWORD_RESET, { email });
+  
+      if (response.status === 200) {
+        Alert.alert('Восстановление пароля', 'Ссылка для сброса пароля отправлена на вашу почту.');
+      }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        Alert.alert('Ошибка', 'Пользователь с таким email не найден.');
+      } else {
+        Alert.alert('Ошибка', 'Что-то пошло не так. Попробуйте снова позже.');
+      }
+    }
+  };  
 
   return (
     <Animatable.View animation="fadeInUp" duration={1000} style={styles.container}>
       <Text style={styles.title}>Войти</Text>
-      
+
       <View style={styles.inputContainer}>
         <Icon name="email" size={24} color="#666" style={styles.icon} />
         <TextInput
@@ -49,7 +69,7 @@ const LoginScreen: React.FC = () => {
           value={email}
           onChangeText={setEmail}
           style={styles.input}
-          placeholderTextColor="#666" // Increased contrast for the placeholder
+          placeholderTextColor="#666"
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -63,7 +83,7 @@ const LoginScreen: React.FC = () => {
           onChangeText={setPassword}
           secureTextEntry
           style={styles.input}
-          placeholderTextColor="#666" // Increased contrast for the placeholder
+          placeholderTextColor="#666"
         />
       </View>
 
@@ -73,9 +93,13 @@ const LoginScreen: React.FC = () => {
         <Text style={styles.loginButtonText}>Войти</Text>
       </TouchableOpacity>
 
-      {/* Add link to redirect to registration screen */}
-      <TouchableOpacity onPress={() => navigation.navigate('Регистрация')}>
+      <TouchableOpacity onPress={() => navigation.navigate('Главная', { screen: 'Регистрация' })}>
         <Text style={styles.linkText}>Нет аккаунта? Зарегистрироваться</Text>
+      </TouchableOpacity>
+
+      {/* New "Forgot Password" button */}
+      <TouchableOpacity onPress={handleForgotPassword}>
+        <Text style={styles.linkText}>Забыли пароль?</Text>
       </TouchableOpacity>
     </Animatable.View>
   );
