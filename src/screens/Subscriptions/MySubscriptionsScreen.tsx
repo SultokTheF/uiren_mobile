@@ -114,6 +114,18 @@ const MySubscriptionsScreen: React.FC = () => {
 
   const user = authContext?.user;
 
+  // New state for expanded banners
+  const [expandedBanner, setExpandedBanner] = useState<string | null>(null);
+
+  const handleBannerPress = (bannerKey: string) => {
+    setExpandedBanner((prevState) => (prevState === bannerKey ? null : bannerKey));
+  };
+
+  const purchaseSubscription = (type: string) => {
+    setSubscriptionType(type);
+    bottomSheetRef.current?.open();
+  };
+
   const fetchSection = async (sectionId: number) => {
     try {
       const response = await axiosInstance.get(`${endpoints.SECTIONS}${sectionId}/`);
@@ -493,35 +505,102 @@ const MySubscriptionsScreen: React.FC = () => {
 
         {/* Promotional Banners */}
         <View style={styles.bannersContainer}>
-          <Animatable.View animation="slideInRight" duration={800} style={styles.banner}>
-            <Image
-              source={require('../../assets/images/Frame 1.png')} // Monthly subscription image
-              style={styles.bannerImage}
-              resizeMode="contain"
-              accessibilityLabel="Абонемент на месяц"
-            />
-            <Text style={styles.bannerText}>Абонемент на месяц - 20 000 ₸</Text>
-          </Animatable.View>
+          {/* Monthly Subscription Banner */}
+          <TouchableOpacity onPress={() => handleBannerPress('month')}>
+            <Animatable.View animation="slideInRight" duration={800} style={styles.banner}>
+              <Image
+                source={require('../../assets/images/Frame 1.png')} // Monthly subscription image
+                style={styles.bannerImage}
+                resizeMode="contain"
+                accessibilityLabel="Абонемент на месяц"
+              />
+              <Text style={styles.bannerText}>Абонемент на месяц - 20 000 ₸</Text>
+              {expandedBanner === 'month' && (
+                <Animatable.View
+                  animation="fadeInDown"
+                  duration={500}
+                  style={styles.expandedContent}
+                >
+                  <Text style={styles.expandedText}>
+                    • Неограниченный доступ ко всем занятиям на месяц.{'\n'}
+                    • Возможность взять в рассрочку на 6 месяцев{'\n'}
+                    • Скидка 10% на дополнительные услуги.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.purchaseButton}
+                    onPress={() => purchaseSubscription('MONTH')}
+                  >
+                    <Text style={styles.purchaseButtonText}>Купить</Text>
+                  </TouchableOpacity>
+                </Animatable.View>
+              )}
+            </Animatable.View>
+          </TouchableOpacity>
 
-          <Animatable.View animation="slideInLeft" duration={800} style={styles.banner}>
-            <Image
-              source={require('../../assets/images/Frame 2.png')} // 6 Months subscription image
-              style={styles.bannerImage}
-              resizeMode="contain"
-              accessibilityLabel="Абонемент на 6 месяцев"
-            />
-            <Text style={styles.bannerText}>Абонемент на 6 месяцев - 100 000 ₸</Text>
-          </Animatable.View>
+          {/* 6 Months Subscription Banner */}
+          <TouchableOpacity onPress={() => handleBannerPress('6_months')}>
+            <Animatable.View animation="slideInLeft" duration={800} style={styles.banner}>
+              <Image
+                source={require('../../assets/images/Frame 2.png')} // 6 Months subscription image
+                style={styles.bannerImage}
+                resizeMode="contain"
+                accessibilityLabel="Абонемент на 6 месяцев"
+              />
+              <Text style={styles.bannerText}>Абонемент на 6 месяцев - 100 000 ₸</Text>
+              {expandedBanner === '6_months' && (
+                <Animatable.View
+                  animation="fadeInDown"
+                  duration={500}
+                  style={styles.expandedContent}
+                >
+                  <Text style={styles.expandedText}>
+                    • Неограниченный доступ ко всем занятиям на 6 месяцев.{'\n'}
+                    • Возможность взять в рассрочку на 12 месяцев{'\n'}
+                    • Скидка 15% на дополнительные услуги.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.purchaseButton}
+                    onPress={() => purchaseSubscription('6_MONTHS')}
+                  >
+                    <Text style={styles.purchaseButtonText}>Купить</Text>
+                  </TouchableOpacity>
+                </Animatable.View>
+              )}
+            </Animatable.View>
+          </TouchableOpacity>
 
-          <Animatable.View animation="slideInRight" duration={800} style={styles.banner}>
-            <Image
-              source={require('../../assets/images/Frame 3.png')} // Yearly subscription image
-              style={styles.bannerImage}
-              resizeMode="contain"
-              accessibilityLabel="Абонемент на год"
-            />
-            <Text style={styles.bannerText}>Абонемент на год - 180 000 ₸</Text>
-          </Animatable.View>
+          {/* Yearly Subscription Banner */}
+          <TouchableOpacity onPress={() => handleBannerPress('year')}>
+            <Animatable.View animation="slideInRight" duration={800} style={styles.banner}>
+              <Image
+                source={require('../../assets/images/Frame 3.png')} // Yearly subscription image
+                style={styles.bannerImage}
+                resizeMode="contain"
+                accessibilityLabel="Абонемент на год"
+              />
+              <Text style={styles.bannerText}>Абонемент на год - 180 000 ₸</Text>
+              {expandedBanner === 'year' && (
+                <Animatable.View
+                  animation="fadeInDown"
+                  duration={500}
+                  style={styles.expandedContent}
+                >
+                  <Text style={styles.expandedText}>
+                    • Неограниченный доступ ко всем занятиям на год.{'\n'}
+                    • Возможность взять в рассрочку на 24 месяца{'\n'}
+                    • Скидка 20% на дополнительные услуги.{'\n'}
+                    {/* • Бесплатная спортивная форма в подарок! */}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.purchaseButton}
+                    onPress={() => purchaseSubscription('YEAR')}
+                  >
+                    <Text style={styles.purchaseButtonText}>Купить</Text>
+                  </TouchableOpacity>
+                </Animatable.View>
+              )}
+            </Animatable.View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -778,6 +857,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+    marginTop: 20,
   },
   submitButtonText: {
     color: '#fff',
@@ -835,6 +915,30 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  expandedContent: {
+    marginTop: 10,
+    backgroundColor: '#F0F0F0',
+    padding: 10,
+    borderRadius: 8,
+    width: '100%',
+  },
+  expandedText: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 10,
+    lineHeight: 20,
+  },
+  purchaseButton: {
+    backgroundColor: '#007aff',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  purchaseButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   lessonText: {
     fontSize: 16,
