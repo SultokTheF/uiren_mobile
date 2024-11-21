@@ -33,8 +33,7 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ],
-      "expo-font"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -44,7 +43,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "2edb4633-07f1-4339-b10e-c8a25e009be0"
+        "projectId": "57326aa9-b7d1-43af-bc39-493288af9485"
       }
     },
     "owner": "sultokthef"

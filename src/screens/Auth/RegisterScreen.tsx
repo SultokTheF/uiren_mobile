@@ -57,7 +57,7 @@ const RegisterScreen: React.FC = () => {
         [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('Вход'),
+            onPress: () => navigation.navigate('Профиль', { screen: 'Вход' }),
           },
         ]
       );
