@@ -156,7 +156,7 @@ const RegisterScreen: React.FC = () => {
           </TouchableOpacity>
 
           {/* Add link to redirect to login screen */}
-          <TouchableOpacity onPress={() => navigation.navigate('Вход')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Профиль', { screen: 'Вход' })}>
             <Text style={styles.linkText}>Уже есть аккаунт? Войти</Text>
           </TouchableOpacity>
         </Animatable.View>
