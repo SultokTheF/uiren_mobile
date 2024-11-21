@@ -168,7 +168,7 @@ const MySubscriptionsScreen: React.FC = () => {
       const message = `Здравствуйте! Меня зовут ${user?.first_name} ${user?.last_name}. Я бы хотел купить подписку на ${
         subscriptionType === 'MONTH' ? 'месяц' : subscriptionType === '6_MONTHS' ? '6 месяцев' : 'год'
       }.`;
-      const phoneNumber = '7757064732'; // International format without symbols
+      const phoneNumber = '77073478844'; // International format without symbols
       const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
       const supported = await Linking.canOpenURL(url);
 

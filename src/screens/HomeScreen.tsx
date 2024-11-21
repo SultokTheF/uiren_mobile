@@ -95,7 +95,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const handlePhonePress = () => {
-    const phoneNumber = '+77071098841'; // Ensure the phone number is in the correct format
+    const phoneNumber = '+77073478844'; // Ensure the phone number is in the correct format
     Linking.openURL(`tel:${phoneNumber}`).catch(err => {
       console.error('Failed to make a phone call:', err);
       Alert.alert('Error', 'Unable to make a phone call.');
