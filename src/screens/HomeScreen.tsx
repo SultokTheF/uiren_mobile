@@ -146,6 +146,13 @@ const HomeScreen: React.FC = () => {
           >
             <Icon name="phone" size={30} color="#007aff" />
           </Pressable>
+          <Pressable
+            onPress={() => navigation.navigate('Расписание')}
+            style={styles.iconButton}
+            accessibilityLabel="Расписание"
+          >
+            <Icon name="calendar-today" size={30} color="#007aff" />
+          </Pressable>
         </View>
       </View>
 
@@ -282,11 +289,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   logo: {
+    marginTop: 40,
     width: 100,
     height: 100,
     resizeMode: 'contain',
   },
+  sheduleButtons: {
+    marginTop: 40,
+    marginLeft: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   headerButtons: {
+    marginTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
   },

@@ -74,7 +74,7 @@ const CentersSectionsScreen: React.FC = () => {
             <Image source={{ uri: section.image }} style={styles.sectionCardImage} />
             <View style={styles.sectionDetails}>
               <Text style={styles.sectionTitle}>{section.name}</Text>
-              <Text style={styles.aboutText}>{getRandomAbout()}</Text>
+              <Text style={styles.aboutText}>{section.description}</Text>
             </View>
           </View>
         </Pressable>
@@ -90,7 +90,7 @@ const CentersSectionsScreen: React.FC = () => {
           <Image source={{ uri: center.image }} style={styles.centerCardImage} />
           <View style={styles.centerCardDetails}>
             <Text style={styles.centerTitle}>{center.name}</Text>
-            <Text style={styles.aboutText}>{getRandomAbout()}</Text>
+            <Text style={styles.aboutText}>{center.about}</Text>
             <View style={styles.centerInfo}>
               <Icon name="location-on" size={16} color="#777" />
               <Text style={styles.centerLocation}>{center.location}</Text>

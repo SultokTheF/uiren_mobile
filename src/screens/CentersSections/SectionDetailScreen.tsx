@@ -120,7 +120,7 @@ const SectionDetailScreen: React.FC = () => {
       Alert.alert('Ошибка', 'Выберите расписание и абонемент.');
       return;
     }
-
+  
     setIsSubmitting(true);
     try {
       await axiosInstance.post(endpoints.RECORDS, {
@@ -128,6 +128,11 @@ const SectionDetailScreen: React.FC = () => {
         subscription: selectedSubscription,
       });
       Alert.alert('Успех', 'Запись успешно забронирована!');
+      // Refresh schedules to update reserved counts or statuses
+      await fetchSchedules(selectedDate || moment().format('YYYY-MM-DD'));
+      // Reset selected schedule and subscription
+      setSelectedSchedule(null);
+      setSelectedSubscription(null);
       bottomSheetRef.current?.close(); // Close the bottom sheet after reservation
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Не удалось забронировать запись.';
@@ -136,6 +141,7 @@ const SectionDetailScreen: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+  
 
   useEffect(() => {
     fetchSectionDetails();

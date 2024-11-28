@@ -43,6 +43,9 @@ interface RecordType {
     end_date: string;
     is_active: boolean;
     is_activated_by_admin: boolean;
+    is_frozen: boolean;
+    frozen_start_date: string | null;
+    frozen_end_date: string | null;
   };
   is_canceled: boolean;
   sectionName?: string;
@@ -419,13 +422,21 @@ const MySubscriptionsScreen: React.FC = () => {
                 </View>
                 <View style={styles.subscriptionInfo}>
                   {editingSub === sub.id ? (
-                    <TextInput
-                      style={styles.subscriptionInput}
-                      value={newSubName}
-                      onChangeText={setNewSubName}
-                      placeholder="Введите новое название"
-                      placeholderTextColor="#888"
-                    />
+                    <>
+                      <TextInput
+                        style={styles.subscriptionInput}
+                        value={newSubName}
+                        onChangeText={setNewSubName}
+                        placeholder="Введите новое название"
+                        placeholderTextColor="#888"
+                      />
+                      <TouchableOpacity
+                        style={styles.saveButton}
+                        onPress={() => handleEditSubmit(sub.id)}
+                      >
+                        <Text style={styles.saveButtonText}>Сохранить</Text>
+                      </TouchableOpacity>
+                    </>
                   ) : (
                     <Text style={styles.subscriptionTitle}>
                       {sub.name} -{' '}
@@ -438,6 +449,12 @@ const MySubscriptionsScreen: React.FC = () => {
                     Действует с {new Date(sub.start_date).toLocaleDateString()} по{' '}
                     {new Date(sub.end_date).toLocaleDateString()}
                   </Text>
+                  {sub.is_frozen && sub.frozen_start_date && sub.frozen_end_date && (
+                    <Text style={styles.frozenDateText}>
+                      Заморожено с {new Date(sub.frozen_start_date).toLocaleDateString()} по{' '}
+                      {new Date(sub.frozen_end_date).toLocaleDateString()}
+                    </Text>
+                  )}
                   <Text style={styles.subscriptionStatus}>💪 Статус: Активная</Text>
                 </View>
 
@@ -446,9 +463,9 @@ const MySubscriptionsScreen: React.FC = () => {
                   {editingSub === sub.id ? (
                     <TouchableOpacity
                       style={styles.actionButton}
-                      onPress={() => handleEditSubmit(sub.id)}
+                      onPress={() => setEditingSub(null)} // Cancel editing
                     >
-                      <Icon name="content-save" size={20} color="#fff" />
+                      <Icon name="close" size={20} color="#FF6347" />
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
@@ -462,28 +479,32 @@ const MySubscriptionsScreen: React.FC = () => {
                     </TouchableOpacity>
                   )}
 
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => openCalendar(sub.id)}
-                  >
-                    <Icon name="history" size={20} color="#007aff" />
-                  </TouchableOpacity>
+                  {!editingSub && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => openCalendar(sub.id)}
+                      >
+                        <Icon name="history" size={20} color="#007aff" />
+                      </TouchableOpacity>
 
-                  {/* Freeze/Unfreeze Icon Button */}
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() =>
-                      sub.is_frozen
-                        ? handleUnfreezeSubscription(sub.id)
-                        : handleFreezeSubscription(sub.id, sub.type)
-                    }
-                  >
-                    <Icon
-                      name={sub.is_frozen ? 'play-circle-outline' : 'snowflake'}
-                      size={20}
-                      color={sub.is_frozen ? '#4CAF50' : '#FF6347'}
-                    />
-                  </TouchableOpacity>
+                      {/* Freeze/Unfreeze Icon Button */}
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() =>
+                          sub.is_frozen
+                            ? handleUnfreezeSubscription(sub.id)
+                            : handleFreezeSubscription(sub.id, sub.type)
+                        }
+                      >
+                        <Icon
+                          name={sub.is_frozen ? 'play-circle-outline' : 'snowflake'}
+                          size={20}
+                          color={sub.is_frozen ? '#4CAF50' : '#FF6347'}
+                        />
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               </Animatable.View>
             ))}
@@ -909,6 +930,23 @@ const styles = StyleSheet.create({
     height: 150, // Adjust the height as needed
     marginBottom: 10, // Space between image and text
     borderRadius: 10, // Optional: Rounded corners
+  },
+  frozenDateText: {
+    fontSize: 14,
+    color: '#FF6347', // Red color for frozen dates
+    marginTop: 5,
+  },
+  saveButton: {
+    marginTop: 10,
+    backgroundColor: '#007aff',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   bannerText: {
     fontSize: 16,
