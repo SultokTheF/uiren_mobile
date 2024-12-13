@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
+  Dimensions,
 } from 'react-native';
 import { axiosInstance, endpoints } from '../api/apiClient';
 import { AuthContext } from '../contexts/AuthContext';
@@ -16,6 +17,8 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Animatable from 'react-native-animatable';
 import { Linking } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 const ScheduleScreen: React.FC = () => {
   LocaleConfig.locales['ru'] = {
@@ -142,56 +145,58 @@ const ScheduleScreen: React.FC = () => {
     }, {});
 
     return (
-      <Calendar
-        current={new Date().toISOString().split('T')[0]}
-        markedDates={markedDates}
-        onDayPress={async (day: { dateString: string }) => {
-          try {
-            setLoadingRecords(true);
-            const dateRecords = records.filter((record) => record.schedule.date === day.dateString);
-            if (dateRecords.length > 0) {
-              dateRecords.sort((a, b) => {
-                const timeA = Date.parse(`1970-01-01T${a.schedule.start_time}`);
-                const timeB = Date.parse(`1970-01-01T${b.schedule.start_time}`);
-                return timeA - timeB;
-              });
+      <View style={styles.calendarContainer}>
+        <Calendar
+          current={new Date().toISOString().split('T')[0]}
+          markedDates={markedDates}
+          onDayPress={async (day: { dateString: string }) => {
+            try {
+              setLoadingRecords(true);
+              const dateRecords = records.filter((record) => record.schedule.date === day.dateString);
+              if (dateRecords.length > 0) {
+                dateRecords.sort((a, b) => {
+                  const timeA = Date.parse(`1970-01-01T${a.schedule.start_time}`);
+                  const timeB = Date.parse(`1970-01-01T${b.schedule.start_time}`);
+                  return timeA - timeB;
+                });
 
-              const recordsWithDetails = await Promise.all(
-                dateRecords.map(async (record: any) => {
-                  const sectionData = await fetchSection(record.schedule.section);
-                  const sectionName = sectionData ? sectionData[0] : 'Неизвестное занятие';
-                  const centerName = sectionData ? sectionData[1] : 'Неизвестный центр';
-                  return {
-                    ...record,
-                    sectionName,
-                    centerName,
-                  };
-                })
-              );
+                const recordsWithDetails = await Promise.all(
+                  dateRecords.map(async (record: any) => {
+                    const sectionData = await fetchSection(record.schedule.section);
+                    const sectionName = sectionData ? sectionData[0] : 'Неизвестное занятие';
+                    const centerName = sectionData ? sectionData[1] : 'Неизвестный центр';
+                    return {
+                      ...record,
+                      sectionName,
+                      centerName,
+                    };
+                  })
+                );
 
-              setSelectedDateRecords(recordsWithDetails);
-              setShowRecordModal(true);
-            } else {
-              Alert.alert('Записей нет', 'На выбранную дату нет записей.');
+                setSelectedDateRecords(recordsWithDetails);
+                setShowRecordModal(true);
+              } else {
+                Alert.alert('Записей нет', 'На выбранную дату нет записей.');
+              }
+            } catch (error) {
+              Alert.alert('Ошибка', 'Не удалось загрузить записи.');
+            } finally {
+              setLoadingRecords(false);
             }
-          } catch (error) {
-            Alert.alert('Ошибка', 'Не удалось загрузить записи.');
-          } finally {
-            setLoadingRecords(false);
-          }
-        }}
-        theme={{
-          textDayFontFamily: 'Arial',
-          textMonthFontFamily: 'Arial',
-          textDayHeaderFontFamily: 'Arial',
-          textMonthFontWeight: 'bold',
-          todayTextColor: '#007aff',
-          selectedDayBackgroundColor: '#007aff',
-          dayTextColor: '#333',
-          monthTextColor: '#007aff',
-          arrowColor: '#007aff',
-        }}
-      />
+          }}
+          theme={{
+            textDayFontFamily: 'Arial',
+            textMonthFontFamily: 'Arial',
+            textDayHeaderFontFamily: 'Arial',
+            textMonthFontWeight: 'bold',
+            todayTextColor: '#007aff',
+            selectedDayBackgroundColor: '#007aff',
+            dayTextColor: '#333',
+            monthTextColor: '#007aff',
+            arrowColor: '#007aff',
+          }}
+        />
+      </View>
     );
   };
 
@@ -217,7 +222,7 @@ const ScheduleScreen: React.FC = () => {
         <View style={styles.modalOverlay}>
           <Animatable.View animation="zoomIn" duration={500} style={styles.modalContent}>
             <Text style={styles.modalTitle}>Детали записи</Text>
-            <ScrollView style={{ width: '100%' }} contentContainerStyle={{ paddingBottom: 20 }}>
+            <ScrollView style={styles.modalScrollView} contentContainerStyle={{ paddingBottom: 20 }}>
               {selectedDateRecords.map((record) => (
                 <View key={record.id} style={styles.recordItem}>
                   <Text style={styles.recordTitle}>
@@ -233,7 +238,7 @@ const ScheduleScreen: React.FC = () => {
                   </Text>
                   <Text style={styles.modalText}>
                     Подписка:{' '}
-                    {record.subscription.name || 'Неизвестный центр'}
+                    {record.subscription.name || 'Неизвестная подписка'}
                   </Text>
                   <Text style={styles.modalText}>
                     <Icon name="check-circle-outline" size={20} /> Посетил:{' '}
@@ -294,7 +299,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F9FB',
+    justifyContent: 'center', // Center vertically
+    alignItems: 'center', // Center horizontally
     padding: 20,
+  },
+  calendarContainer: {
+    width: '100%', // Ensure calendar takes full width within the container
+    alignItems: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -305,27 +316,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007aff',
     marginTop: 10,
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
-    width: '85%',
+    width: width * 0.85, // 85% of screen width
     backgroundColor: '#fff',
     borderRadius: 15,
     padding: 25,
     alignItems: 'center',
     position: 'relative',
-    maxHeight: '80%',
+    maxHeight: height * 0.8, // 80% of screen height
+  },
+  modalScrollView: {
+    width: '100%',
   },
   modalTitle: {
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 20,
     color: '#333',
+    textAlign: 'center',
   },
   modalText: {
     fontSize: 16,
@@ -338,6 +355,7 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: '#F9F9FB',
     borderRadius: 10,
+    width: '100%',
   },
   recordTitle: {
     fontSize: 18,
@@ -389,6 +407,11 @@ const styles = StyleSheet.create({
     right: -15,
     backgroundColor: '#fff',
     borderRadius: 15,
+    elevation: 5, // Add shadow for Android
+    shadowColor: '#000', // Add shadow for iOS
+    shadowOffset: { width: 0, height: 2 }, // Add shadow for iOS
+    shadowOpacity: 0.25, // Add shadow for iOS
+    shadowRadius: 3.84, // Add shadow for iOS
   },
 });
 

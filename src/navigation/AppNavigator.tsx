@@ -51,6 +51,7 @@ const AppNavigator = () => {
           if (route.name === 'Профиль') iconName = 'person';
           if (route.name === 'Карта') iconName = 'map';
           if (route.name === 'QR') iconName = 'qr-code-scanner';
+          if (route.name === 'Расписание') iconName = 'calendar-today';
           return <Icon name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#007aff',
@@ -69,6 +70,7 @@ const AppNavigator = () => {
       <Tab.Screen name="Главная" component={HomeStack} />
       <Tab.Screen name="Карта" component={MapScreen} />
       <Tab.Screen name="QR" component={QRScannerScreen} />
+      <Tab.Screen name="Расписание" component={ScheduleScreen} />
       <Tab.Screen
         name="Профиль"
         component={authContext?.user ? ProfileScreen : LoginScreen}
