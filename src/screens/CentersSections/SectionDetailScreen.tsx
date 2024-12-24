@@ -1,13 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Pressable, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Image, Dimensions } from 'react-native';
+import { 
+  View, 
+  Text, 
+  Pressable, 
+  ScrollView, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ActivityIndicator, 
+  Alert, 
+  Image, 
+  Dimensions 
+} from 'react-native';
 import { axiosInstance, endpoints } from '../../api/apiClient';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SectionDetailScreenNavigationProp } from '@/src/types/types';
-import { Section, Category, Schedule, Subscription } from '../../types/types';
+import { Section, Category, Schedule, Subscription, Center } from '../../types/types';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Modalize } from 'react-native-modalize';
 import moment from 'moment';
 import 'moment/locale/ru'; // Import Russian locale
+import MapView, { Marker } from 'react-native-maps'; // Import MapView and Marker
 
 moment.locale('ru'); // Set moment to Russian
 
@@ -27,9 +39,12 @@ const SectionDetailScreen: React.FC = () => {
   const [selectedSubscription, setSelectedSubscription] = useState<number | null>(null); // Selected subscription
   const [dates, setDates] = useState<string[]>([]); // List of dates for selection
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [center, setCenter] = useState<Center | null>(null); // New state for center data
+  const [mapLoading, setMapLoading] = useState(true); // State for map loading
+  const [mapError, setMapError] = useState<string | null>(null); // State for map error
   const bottomSheetRef = useRef<Modalize>(null); // Reference for bottom sheet
 
-  // Generate next 7 days for date selection
+  // Generate next 5 days for date selection
   const generateDates = () => {
     const newDates = [];
     for (let i = 0; i < 5; i++) {
@@ -53,6 +68,24 @@ const SectionDetailScreen: React.FC = () => {
       setError('Не удалось загрузить информацию о занятии');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch center details based on sectionId
+  const fetchCenterDetails = async () => {
+    try {
+      const response = await axiosInstance.get(endpoints.CENTERS_BY_SECTION, {
+        params: { section_id: sectionId },
+      });
+      if (response.data) {
+        setCenter(response.data[0]); // Assuming the first item is the relevant center
+      } else {
+        setMapError('Информация о центре не найдена');
+      }
+    } catch (error) {
+      setMapError('Не удалось загрузить информацию о центре');
+    } finally {
+      setMapLoading(false);
     }
   };
 
@@ -141,17 +174,17 @@ const SectionDetailScreen: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
 
   useEffect(() => {
     fetchSectionDetails();
+    fetchCenterDetails(); // Fetch center details on component mount
     if (selectedDate) fetchSchedules(selectedDate); // Fetch schedules based on default selected date
   }, [sectionId, selectedDate]);
 
   const openBottomSheet = () => bottomSheetRef.current?.open();
 
-  if (loading) {
-    return <ActivityIndicator size="large" color="#007aff" />;
+  if (loading || mapLoading) {
+    return <ActivityIndicator size="large" color="#007aff" style={styles.loadingIndicator} />;
   }
 
   if (error) {
@@ -176,6 +209,39 @@ const SectionDetailScreen: React.FC = () => {
           <Text style={styles.detailText}>Категория: {category?.name}</Text>
         </View>
 
+        {/* Map Section */}
+        {mapError ? (
+          <Text style={styles.errorText}>{mapError}</Text>
+        ) : center ? (
+          <TouchableOpacity
+            style={styles.mapContainer}
+            onPress={() => navigation.navigate('Карта', { centerId: center.id })}
+          >
+            <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: parseFloat(center.latitude),
+                longitude: parseFloat(center.longitude),
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
+              }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              pitchEnabled={false}
+              rotateEnabled={false}
+            >
+              <Marker
+                coordinate={{
+                  latitude: parseFloat(center.latitude),
+                  longitude: parseFloat(center.longitude),
+                }}
+                title={center.name}
+                description={center.location}
+              />
+            </MapView>
+          </TouchableOpacity>
+        ) : null}
+
         <Pressable style={styles.button} onPress={openBottomSheet}>
           <Text style={styles.buttonText}>Записаться</Text>
         </Pressable>
@@ -199,12 +265,13 @@ const SectionDetailScreen: React.FC = () => {
                 style={[styles.dateOption, selectedDate === date && styles.dateOptionSelected]}
                 onPress={() => handleDateSelect(date)}
               >
-                <Text style={styles.dateText}>{moment(date).format('DD')} {moment(date).format('dd').toUpperCase()}</Text>
+                <Text style={[styles.dateText, selectedDate === date && styles.dateTextSelected]}>
+                  {moment(date).format('DD')} {moment(date).format('dd').toUpperCase()}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          {/* Schedule List */}
           {/* Schedule List */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scheduleList}>
             {filteredSchedules.map((schedule) => (
@@ -218,9 +285,12 @@ const SectionDetailScreen: React.FC = () => {
                 onPress={() => handleScheduleSelect(schedule.id)}
                 disabled={!schedule.status}
               >
-                <Text style={styles.scheduleText}>
+                <Text style={[
+                  styles.scheduleText,
+                  !schedule.status && styles.scheduleTextDisabled
+                ]}>
                   {moment(schedule.start_time, 'HH:mm:ss').format('HH:mm')} - {moment(schedule.end_time, 'HH:mm:ss').format('HH:mm')}
-                  ({schedule.reserved} из {schedule.capacity})
+                  {'\n'}({schedule.reserved} из {schedule.capacity})
                 </Text>
               </Pressable>
             ))}
@@ -249,8 +319,16 @@ const SectionDetailScreen: React.FC = () => {
             </>
           )}
 
-          <TouchableOpacity style={styles.reserveButton} onPress={handleReserve}>
-            <Text style={styles.reserveButtonText}>Забронировать</Text>
+          <TouchableOpacity 
+            style={[styles.reserveButton, isSubmitting && styles.reserveButtonDisabled]} 
+            onPress={handleReserve}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.reserveButtonText}>Забронировать</Text>
+            )}
           </TouchableOpacity>
         </View>
       </Modalize>
@@ -300,6 +378,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#555',
     marginLeft: 10,
+    flex: 1,
   },
   details: {
     marginTop: 20,
@@ -356,6 +435,10 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
   },
+  dateTextSelected: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
   scheduleList: {
     flexDirection: 'row',
     marginBottom: 10,
@@ -366,6 +449,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 8,
     marginHorizontal: 5,
+    minWidth: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scheduleOptionSelected: {
     backgroundColor: '#007aff',
@@ -376,6 +462,10 @@ const styles = StyleSheet.create({
   scheduleText: {
     fontSize: 14,
     color: '#333',
+    textAlign: 'center',
+  },
+  scheduleTextDisabled: {
+    color: '#888',
   },
   reserveButton: {
     backgroundColor: '#28a745',
@@ -383,6 +473,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 10,
     alignItems: 'center',
+  },
+  reserveButtonDisabled: {
+    backgroundColor: '#a5d6a7',
   },
   reserveButtonText: {
     color: '#fff',
@@ -393,6 +486,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 10,
+  },
+  loadingIndicator: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapContainer: {
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    height: 200, // Adjust height as needed
+  },
+  map: {
+    height: '100%',
+    width: '100%',
   },
   modalStyle: {
     borderTopLeftRadius: 20,

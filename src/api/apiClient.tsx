@@ -18,6 +18,7 @@ const endpoints = {
   USERS: 'user/users/',
   CENTERS: 'api/centers/',
   SECTIONS: 'api/sections/',
+  CENTERS_BY_SECTION: 'api/sections/centers-by-section/',
   CATEGORIES: 'api/categories/',
   SUBSCRIPTIONS: 'api/subscriptions/',
   SCHEDULES: 'api/schedules/',
