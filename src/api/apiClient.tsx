@@ -2,7 +2,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://78.140.241.59:8000/';
+const API_BASE_URL = 'https://admin.uiren-edu.kz/';
 
 const axiosInstance = axios.create({
   baseURL: `${API_BASE_URL}/`, // Ensure single slash
